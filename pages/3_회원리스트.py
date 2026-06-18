@@ -21,7 +21,7 @@ if not approved_users:
 else:
     data = []
     for user in approved_users:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars = user
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin = user
         
         # Calculate final score
         final_score = manual_score if manual_score != -1 else power_score
@@ -31,8 +31,10 @@ else:
         stars = "⭐" * wins if wins > 0 else "-"
         
         full_id = f"{riot_id}#{tag_line}"
+        role_str = "👑 운영진" if is_admin == 1 else "일반"
         
         data.append({
+            "권한": role_str,
             "🌟 우승 횟수": stars,
             "롤 아이디": full_id,
             "솔로랭크": solo_tier,

@@ -20,7 +20,7 @@ if not approved_users or len(approved_users) < 10:
 
 # Helper to format user for selectbox
 def format_user(user):
-    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score = user
+    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin = user
     final_score = manual_score if manual_score != -1 else power_score
     return f"{riot_id}#{tag_line} ({solo_tier} / 스코어: {final_score})", user_id, final_score, riot_id
 

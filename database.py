@@ -22,6 +22,8 @@ def init_db():
             flex_tier TEXT DEFAULT 'Unranked',
             power_score INTEGER DEFAULT 0,
             manual_score INTEGER DEFAULT -1,
+            manual_stars INTEGER DEFAULT 0,
+            is_admin INTEGER DEFAULT 0,
             join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -117,7 +119,7 @@ def get_all_approved_users():
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars 
+        SELECT id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin 
         FROM users WHERE status = 'APPROVED'
     ''')
     users = c.fetchall()
@@ -135,6 +137,13 @@ def update_manual_stars(user_id, stars):
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET manual_stars = ? WHERE id = ?", (stars, user_id))
+    conn.commit()
+    conn.close()
+
+def update_admin_role(user_id, is_admin):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (is_admin, user_id))
     conn.commit()
     conn.close()
 

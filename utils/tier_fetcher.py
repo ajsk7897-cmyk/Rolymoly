@@ -3,35 +3,33 @@ from bs4 import BeautifulSoup
 import re
 
 TIER_SCORE_MAP = {
-    "Iron 4": 0, "Iron 3": 1, "Iron 2": 2, "Iron 1": 3,
-    "Bronze 4": 4, "Bronze 3": 5, "Bronze 2": 6, "Bronze 1": 7,
-    "Silver 4": 8, "Silver 3": 9, "Silver 2": 10, "Silver 1": 11,
-    "Gold 4": 12, "Gold 3": 13, "Gold 2": 14, "Gold 1": 15,
-    "Platinum 4": 16, "Platinum 3": 17, "Platinum 2": 18, "Platinum 1": 19,
-    "Emerald 4": 20, "Emerald 3": 21, "Emerald 2": 22, "Emerald 1": 23,
-    "Diamond 4": 24, "Diamond 3": 25, "Diamond 2": 26, "Diamond 1": 27,
-    "Master": 28, "Grandmaster": 29, "Challenger": 30
+    "Iron 4": 10, "Iron 3": 10, "Iron 2": 10, "Iron 1": 10,
+    "Bronze 4": 20, "Bronze 3": 30, "Bronze 2": 40, "Bronze 1": 50,
+    "Silver 4": 60, "Silver 3": 70, "Silver 2": 80, "Silver 1": 90,
+    "Gold 4": 120, "Gold 3": 130, "Gold 2": 140, "Gold 1": 150,
+    "Platinum 4": 200, "Platinum 3": 210, "Platinum 2": 220, "Platinum 1": 230,
+    "Emerald 4": 280, "Emerald 3": 300, "Emerald 2": 320, "Emerald 1": 340,
+    "Diamond 4": 390, "Diamond 3": 420, "Diamond 2": 450, "Diamond 1": 480,
+    "Master": 600, "Grandmaster": 800, "Challenger": 1000
 }
 
 def calculate_power_score(solo_tier_str, flex_tier_str):
-    def get_points(tier_str, multiplier):
+    def get_base_points(tier_str):
         if not tier_str or tier_str == "Unranked":
             return 0
         # Clean tier string, e.g., "Diamond 1", "Master"
-        # Master might have LP like "Master 123 LP", we only want the tier name.
         clean_tier = re.sub(r' \d+ LP', '', tier_str).strip()
         
-        # If the string doesn't match perfectly, try to match starting substring
-        matched_idx = 0
+        matched_score = 0
         for k, v in TIER_SCORE_MAP.items():
             if clean_tier.startswith(k):
-                matched_idx = v
+                matched_score = v
                 break
                 
-        return matched_idx * multiplier
+        return matched_score
 
-    solo_points = get_points(solo_tier_str, 10)
-    flex_points = get_points(flex_tier_str, 3)
+    solo_points = get_base_points(solo_tier_str)
+    flex_points = int(get_base_points(flex_tier_str) * 0.3) # 30% of base score, truncated
     return solo_points + flex_points
 
 def fetch_tier_data(riot_id, tag_line):
