@@ -132,7 +132,7 @@ else:
         
         # 기본값을 현재 권한으로 세팅하기 위해 찾기
         current_user_id = int(target_id_admin.split(" - ")[0])
-        current_admin_status = df[df['ID'] == current_user_id]['is_admin'].values[0]
+        current_admin_status = int(df[df['ID'] == current_user_id]['is_admin'].values[0])
         
         admin_action = st.radio("권한 등급", ["일반 회원", "운영진 (관리자)"], index=current_admin_status)
         if st.button("권한 적용", key="btn_admin"):
