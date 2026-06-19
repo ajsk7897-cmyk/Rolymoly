@@ -21,10 +21,10 @@ if not approved_users:
 else:
     data = []
     for user in approved_users:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin = user
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
         
         # Calculate final score
-        final_score = manual_score if manual_score != -1 else power_score
+        final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
         
         # Calculate stars
         wins = auction_wins.get(user_id, 0) + manual_stars

@@ -29,7 +29,7 @@ def calculate_power_score(solo_tier_str, flex_tier_str):
         return matched_score
 
     solo_points = get_base_points(solo_tier_str)
-    flex_points = int(get_base_points(flex_tier_str) * 0.3) # 30% of base score, truncated
+    flex_points = int(get_base_points(flex_tier_str) * 0.1) # 10% of base score, truncated
     return solo_points + flex_points
 
 def fetch_tier_data(riot_id, tag_line):

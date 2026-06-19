@@ -1,228 +1,373 @@
-import sqlite3
+import gspread
+import streamlit as st
 from datetime import datetime
 
-DB_NAME = "clan.db"
+SPREADSHEET_ID = "1HI0dwaA6HJV9g--lpOpprSO_UoFhFXUleFhI4ur2-44"
 
-def get_connection():
-    return sqlite3.connect(DB_NAME, check_same_thread=False)
+@st.cache_resource
+def get_gspread_client():
+    if "gcp_service_account" in st.secrets:
+        # Streamlit Cloud Secrets 사용
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        return gspread.service_account_from_dict(creds_dict)
+    else:
+        # 로컬 환경 (credentials.json 파일 사용)
+        return gspread.service_account(filename="credentials.json")
 
+def get_sheet():
+    gc = get_gspread_client()
+    return gc.open_by_key(SPREADSHEET_ID)
+
+# init_db is not needed actively if we already created sheets via script, 
+# but we keep it empty or simple to avoid errors from other files
 def init_db():
-    conn = get_connection()
-    c = conn.cursor()
-    
-    # Create users table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            riot_id TEXT,
-            tag_line TEXT,
-            birthdate TEXT,
-            status TEXT DEFAULT 'PENDING',
-            solo_tier TEXT DEFAULT 'Unranked',
-            flex_tier TEXT DEFAULT 'Unranked',
-            power_score INTEGER DEFAULT 0,
-            manual_score INTEGER DEFAULT -1,
-            manual_stars INTEGER DEFAULT 0,
-            is_admin INTEGER DEFAULT 0,
-            join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create matches table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS matches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            match_type TEXT,
-            host TEXT,
-            match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            winning_team TEXT
-        )
-    ''')
-    
-    # Create match_players table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS match_players (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            match_id INTEGER,
-            user_id INTEGER,
-            team_name TEXT,
-            role TEXT,
-            points_spent INTEGER DEFAULT 0,
-            FOREIGN KEY (match_id) REFERENCES matches(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    ''')
-    
-    # Create settings table for dynamic config like admin password
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    ''')
-    # Insert default password if not exists
-    c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('admin_password', 'admin1234')")
-    
-    conn.commit()
-    conn.close()
+    pass
+
+def clear_cache():
+    st.cache_data.clear()
+
+@st.cache_data(ttl=60)
+def get_all_settings():
+    sh = get_sheet()
+    settings_sheet = sh.worksheet("settings")
+    records = settings_sheet.get_all_records()
+    return records
 
 def get_admin_password():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT value FROM settings WHERE key = 'admin_password'")
-    row = c.fetchone()
-    conn.close()
-    return row[0] if row else 'admin1234'
+    records = get_all_settings()
+    for row in records:
+        if row['key'] == 'admin_password':
+            return row['value']
+    return 'admin1234'
 
 def set_admin_password(new_password):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE settings SET value = ? WHERE key = 'admin_password'", (new_password,))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    settings_sheet = sh.worksheet("settings")
+    cell = settings_sheet.find("admin_password", in_column=1)
+    if cell:
+        settings_sheet.update_cell(cell.row, cell.col + 1, new_password)
+    clear_cache()
+
+def _get_next_id(sheet):
+    records = sheet.get_all_records()
+    if not records:
+        return 1
+    ids = [int(r['id']) for r in records if str(r['id']).isdigit()]
+    return max(ids) + 1 if ids else 1
 
 def add_user(riot_id, tag_line, birthdate):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("INSERT INTO users (riot_id, tag_line, birthdate) VALUES (?, ?, ?)",
-              (riot_id, tag_line, birthdate))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    next_id = _get_next_id(users_sheet)
+    users_sheet.append_row([
+        next_id, riot_id, tag_line, birthdate, "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0
+    ])
+    clear_cache()
+
+@st.cache_data(ttl=60)
+def get_all_users():
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    return users_sheet.get_all_records()
 
 def get_pending_users():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT id, riot_id, tag_line, birthdate FROM users WHERE status = 'PENDING'")
-    users = c.fetchall()
-    conn.close()
-    return users
-
-def approve_user(user_id, solo_tier, flex_tier, power_score):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        UPDATE users 
-        SET status = 'APPROVED', solo_tier = ?, flex_tier = ?, power_score = ?
-        WHERE id = ?
-    ''', (solo_tier, flex_tier, power_score, user_id))
-    conn.commit()
-    conn.close()
-
-def reject_user(user_id):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
+    users = get_all_users()
+    pending = []
+    for u in users:
+        if u['status'] == 'PENDING':
+            pending.append((u['id'], u['riot_id'], u['tag_line'], u['birthdate']))
+    return pending
 
 def get_all_approved_users():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        SELECT id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin 
-        FROM users WHERE status = 'APPROVED'
-    ''')
-    users = c.fetchall()
-    conn.close()
-    return users
+    users = get_all_users()
+    approved = []
+    for u in users:
+        if u['status'] == 'APPROVED':
+            approved.append((
+                int(u['id']), u['riot_id'], u['tag_line'], u['solo_tier'], 
+                u['flex_tier'], int(u['power_score']), int(u['manual_score']), 
+                int(u['manual_stars']), int(u['is_admin']), int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            ))
+    return approved
+
+def approve_user(user_id, solo_tier, flex_tier, power_score):
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update(f"E{cell.row}:H{cell.row}", [["APPROVED", solo_tier, flex_tier, power_score]])
+        clear_cache()
+
+def reject_user(user_id):
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.delete_rows(cell.row)
+        clear_cache()
 
 def update_manual_score(user_id, manual_score):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE users SET manual_score = ? WHERE id = ?", (manual_score, user_id))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update_cell(cell.row, 9, manual_score)
+        clear_cache()
 
 def update_manual_stars(user_id, stars):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE users SET manual_stars = ? WHERE id = ?", (stars, user_id))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update_cell(cell.row, 10, stars)
+        clear_cache()
 
 def update_admin_role(user_id, is_admin):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (is_admin, user_id))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update_cell(cell.row, 11, is_admin)
+        clear_cache()
 
 def kick_user(user_id):
-    conn = get_connection()
-    c = conn.cursor()
-    # To maintain history consistency, we might just set status to KICKED or delete.
-    # We will delete them. If they have matches, their match records might be left dangling unless cascading delete, 
-    # but since we want history, we should actually keep them in DB but mark as 'KICKED'.
-    c.execute("UPDATE users SET status = 'KICKED' WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    users_sheet = sh.worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update_cell(cell.row, 5, 'KICKED')
+        clear_cache()
 
 def delete_all_history():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM match_players")
-    c.execute("DELETE FROM matches")
-    conn.commit()
-    conn.close()
+    sh = get_sheet()
+    try:
+        mp_sheet = sh.worksheet("match_players")
+        # Keep header
+        if mp_sheet.row_count > 1:
+            mp_sheet.delete_rows(2, mp_sheet.row_count)
+            
+        matches_sheet = sh.worksheet("matches")
+        if matches_sheet.row_count > 1:
+            matches_sheet.delete_rows(2, matches_sheet.row_count)
+        
+        # Reset match_bonus for all users
+        users_sheet = sh.worksheet("users")
+        users = users_sheet.get_all_records()
+        updates = []
+        for idx, u in enumerate(users):
+            if str(u.get('match_bonus', '0')) != '0':
+                updates.append({'range': f"M{idx+2}", 'values': [[0]]})
+        if updates:
+            users_sheet.batch_update(updates)
+            
+    except Exception as e:
+        print("Error resetting history", e)
+    clear_cache()
+
+def delete_match(match_id):
+    sh = get_sheet()
+    
+    matches_sheet = sh.worksheet("matches")
+    matches = matches_sheet.get_all_records()
+    match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
+    
+    mp_sheet = sh.worksheet("match_players")
+    mps = mp_sheet.get_all_records()
+    
+    if match_to_delete and match_to_delete['match_type'] == 'NORMAL' and match_to_delete['winning_team'] not in ['아직 모름', '']:
+        winning_team = match_to_delete['winning_team']
+        users_sheet = sh.worksheet("users")
+        users = users_sheet.get_all_records()
+        user_dict = {str(u['id']): u for u in users}
+        
+        updates = []
+        for mp in mps:
+            if str(mp['match_id']) == str(match_id):
+                uid = str(mp['user_id'])
+                if uid in user_dict:
+                    u = user_dict[uid]
+                    base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+                    bonus_change = int(base_score * 0.05)
+                    current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+                    
+                    if mp['team_name'] == winning_team:
+                        current_bonus -= bonus_change # rollback win
+                    else:
+                        current_bonus += bonus_change # rollback loss
+                        
+                    cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
+                    updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
+        if updates:
+            users_sheet.batch_update(updates)
+
+    # Delete match_players rows
+    rows_to_delete = []
+    for i, mp in enumerate(mps):
+        if str(mp['match_id']) == str(match_id):
+            rows_to_delete.append(i + 2) 
+    
+    for r in sorted(rows_to_delete, reverse=True):
+        mp_sheet.delete_rows(r)
+
+    # Delete match row
+    cell = matches_sheet.find(str(match_id), in_column=1)
+    if cell:
+        matches_sheet.delete_rows(cell.row)
+        
+    clear_cache()
+
+@st.cache_data(ttl=60)
+def get_matches():
+    sh = get_sheet()
+    matches_sheet = sh.worksheet("matches")
+    records = matches_sheet.get_all_records()
+    try:
+        records = sorted(records, key=lambda x: str(x['match_date']), reverse=True)
+    except:
+        pass
+    return [(int(r['id']), r['match_type'], r['host'], r['match_date'], r['winning_team']) for r in records]
+
+@st.cache_data(ttl=60)
+def get_match_players(match_id):
+    sh = get_sheet()
+    mp_sheet = sh.worksheet("match_players")
+    users_sheet = sh.worksheet("users")
+    
+    mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+    users = {str(u['id']): u for u in users_sheet.get_all_records()}
+    
+    result = []
+    for mp in mps:
+        uid = str(mp['user_id'])
+        if uid in users:
+            u = users[uid]
+            result.append((
+                mp['team_name'], mp['role'], u['riot_id'], u['tag_line'], 
+                int(u['power_score']), int(u['manual_score']), int(mp['points_spent']), 
+                int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            ))
+    return result
 
 def add_match(match_type, host, winning_team, players_data):
-    # players_data is a list of tuples: (user_id, team_name, role, points_spent)
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("INSERT INTO matches (match_type, host, winning_team) VALUES (?, ?, ?)", 
-              (match_type, host, winning_team))
-    match_id = c.lastrowid
+    sh = get_sheet()
+    matches_sheet = sh.worksheet("matches")
+    mp_sheet = sh.worksheet("match_players")
     
-    for player in players_data:
-        c.execute('''
-            INSERT INTO match_players (match_id, user_id, team_name, role, points_spent)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (match_id, player[0], player[1], player[2], player[3]))
+    next_match_id = _get_next_id(matches_sheet)
+    matches_sheet.append_row([
+        next_match_id, match_type, host, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), winning_team
+    ])
+    
+    next_mp_id = _get_next_id(mp_sheet)
+    mp_rows = []
+    for i, p in enumerate(players_data):
+        mp_rows.append([next_mp_id + i, next_match_id, p[0], p[1], p[2], p[3]])
         
-    conn.commit()
-    conn.close()
+    if mp_rows:
+        mp_sheet.append_rows(mp_rows)
+        
+    clear_cache()
+    
+    if match_type == "NORMAL" and winning_team not in ["아직 모름", ""]:
+        _apply_match_bonus(sh, players_data, winning_team)
 
-def get_matches():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT id, match_type, host, match_date, winning_team FROM matches ORDER BY match_date DESC")
-    matches = c.fetchall()
-    conn.close()
-    return matches
+def update_match_winner(match_id, new_winning_team):
+    sh = get_sheet()
+    matches_sheet = sh.worksheet("matches")
+    
+    matches = matches_sheet.get_all_records()
+    match = next((m for m in matches if str(m['id']) == str(match_id)), None)
+    
+    if match:
+        old_winning_team = match['winning_team']
+        
+        if match['match_type'] == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
+            mp_sheet = sh.worksheet("match_players")
+            mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+            players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
+            _rollback_match_bonus(sh, players_data_rollback, old_winning_team)
+            
+        cell = matches_sheet.find(str(match_id), in_column=1)
+        if cell:
+            matches_sheet.update_cell(cell.row, 5, new_winning_team)
+            
+        if match['match_type'] == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
+            mp_sheet = sh.worksheet("match_players")
+            mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+            players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
+            _apply_match_bonus(sh, players_data, new_winning_team)
+            
+        clear_cache()
 
-def get_match_players(match_id):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        SELECT mp.team_name, mp.role, u.riot_id, u.tag_line, u.power_score, u.manual_score, mp.points_spent
-        FROM match_players mp
-        JOIN users u ON mp.user_id = u.id
-        WHERE mp.match_id = ?
-    ''', (match_id,))
-    players = c.fetchall()
-    conn.close()
-    return players
+def _apply_match_bonus(sh, players_data, winning_team):
+    users_sheet = sh.worksheet("users")
+    users = users_sheet.get_all_records()
+    user_dict = {str(u['id']): u for u in users}
+    
+    updates = []
+    for p in players_data:
+        uid = str(p[0])
+        team_name = p[1]
+        if uid in user_dict:
+            u = user_dict[uid]
+            base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+            bonus_change = int(base_score * 0.05)
+            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            
+            if team_name == winning_team:
+                current_bonus += bonus_change
+            else:
+                current_bonus -= bonus_change
+                
+            cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
+            updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
+                
+    if updates:
+        users_sheet.batch_update(updates)
 
+def _rollback_match_bonus(sh, players_data, winning_team):
+    users_sheet = sh.worksheet("users")
+    users = users_sheet.get_all_records()
+    user_dict = {str(u['id']): u for u in users}
+    
+    updates = []
+    for p in players_data:
+        uid = str(p[0])
+        team_name = p[1]
+        if uid in user_dict:
+            u = user_dict[uid]
+            base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+            bonus_change = int(base_score * 0.05)
+            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            
+            if team_name == winning_team:
+                current_bonus -= bonus_change
+            else:
+                current_bonus += bonus_change
+                
+            cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
+            updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
+                
+    if updates:
+        users_sheet.batch_update(updates)
+
+@st.cache_data(ttl=60)
 def get_auction_wins_by_user():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        SELECT mp.user_id, COUNT(*) as wins
-        FROM matches m
-        JOIN match_players mp ON m.id = mp.match_id AND m.winning_team = mp.team_name
-        WHERE m.match_type = 'AUCTION'
-        GROUP BY mp.user_id
-    ''')
-    wins = dict(c.fetchall())
-    conn.close()
+    sh = get_sheet()
+    matches_sheet = sh.worksheet("matches")
+    mp_sheet = sh.worksheet("match_players")
+    
+    matches = matches_sheet.get_all_records()
+    mps = mp_sheet.get_all_records()
+    
+    wins = {}
+    for match in matches:
+        if match['match_type'] == 'AUCTION' and match['winning_team'] not in ["", "아직 모름"]:
+            match_mps = [mp for mp in mps if str(mp['match_id']) == str(match['id']) and mp['team_name'] == match['winning_team']]
+            for mp in match_mps:
+                uid = int(mp['user_id'])
+                wins[uid] = wins.get(uid, 0) + 1
     return wins
-
-def update_match_winner(match_id, winning_team):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE matches SET winning_team = ? WHERE id = ?", (winning_team, match_id))
-    conn.commit()
-    conn.close()
 
 # Initialize immediately when imported if not exists
 init_db()

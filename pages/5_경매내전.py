@@ -17,8 +17,8 @@ if not approved_users or len(approved_users) < 10:
 
 # Helpers
 def format_user(user):
-    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin = user
-    final_score = manual_score if manual_score != -1 else power_score
+    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+    final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
     return f"{riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score
 
 user_options = [format_user(u) for u in approved_users]

@@ -25,8 +25,8 @@ else:
         type_str = "일반" if match_type == "NORMAL" else "경매"
         players = database.get_match_players(match_id)
         for p in players:
-            t_name, role, r_id, t_line, p_score, m_score, p_spent = p
-            f_score = m_score if m_score != -1 else p_score
+            t_name, role, r_id, t_line, p_score, m_score, p_spent, m_bonus = p
+            f_score = (m_score if m_score != -1 else p_score) + m_bonus
             csv_data.append({
                 "매치번호": match_id,
                 "내전종류": type_str,
@@ -73,10 +73,10 @@ else:
             # Group by team
             teams = {}
             for p in players:
-                t_name, role, r_id, t_line, p_score, m_score, p_spent = p
+                t_name, role, r_id, t_line, p_score, m_score, p_spent, m_bonus = p
                 if t_name not in teams:
                     teams[t_name] = []
-                f_score = m_score if m_score != -1 else p_score
+                f_score = (m_score if m_score != -1 else p_score) + m_bonus
                 teams[t_name].append({
                     "역할/포지션": role,
                     "닉네임": f"{r_id}#{t_line}",

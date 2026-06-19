@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
-from utils.tier_fetcher import fetch_tier_data
+from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP
 
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
 
@@ -23,7 +23,7 @@ if not st.session_state.admin_authenticated:
         approved_users = database.get_all_approved_users()
         is_valid_admin = False
         for u in approved_users:
-            u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin = u
+            u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus = u
             if is_admin == 1:
                 full_name = f"{r_id}#{t_line}".lower()
                 if admin_id_input.strip().lower() == full_name:
@@ -78,8 +78,8 @@ approved_users = database.get_all_approved_users()
 if not approved_users:
     st.info("등록된 회원이 없습니다.")
 else:
-    df = pd.DataFrame(approved_users, columns=['ID', 'Riot ID', 'Tag Line', '솔로랭크', '자유랭크', 'Power Score', 'Manual Score', 'Manual Stars', 'is_admin'])
-    df['Final Score'] = df.apply(lambda row: row['Manual Score'] if row['Manual Score'] != -1 else row['Power Score'], axis=1)
+    df = pd.DataFrame(approved_users, columns=['ID', 'Riot ID', 'Tag Line', '솔로랭크', '자유랭크', 'Power Score', 'Manual Score', 'Manual Stars', 'is_admin', 'Match Bonus'])
+    df['Final Score'] = df.apply(lambda row: (row['Manual Score'] if row['Manual Score'] != -1 else row['Power Score']) + row['Match Bonus'], axis=1)
     
     st.dataframe(df, use_container_width=True)
     
@@ -88,13 +88,23 @@ else:
     col3, col4 = st.columns(2)
     
     with col1:
-        st.write("#### 파워스코어 수기 수정")
+        st.write("#### 파워스코어 수기 수정 (티어 기반)")
         target_id_score = st.selectbox("회원 선택 (수정)", df['ID'].astype(str) + " - " + df['Riot ID'] + "#" + df['Tag Line'], key="score_select")
-        new_score = st.number_input("새로운 점수 (-1: 자동계산)", value=-1, step=1)
+        
+        tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
+        selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options)
+        
+        if selected_tier == "자동계산 (-1)":
+            new_score = -1
+        elif selected_tier == "직접입력":
+            new_score = st.number_input("점수 직접입력", min_value=-1, step=1, value=0)
+        else:
+            new_score = TIER_SCORE_MAP[selected_tier]
+            
         if st.button("수정 적용", key="btn_score"):
             user_id = int(target_id_score.split(" - ")[0])
             database.update_manual_score(user_id, new_score)
-            st.success("수정되었습니다.")
+            st.success(f"수정되었습니다. (반영 점수: {new_score})")
             st.rerun()
             
     with col2:
@@ -130,6 +140,23 @@ else:
             database.update_admin_role(current_user_id, val)
             st.success("권한이 변경되었습니다.")
             st.rerun()
+
+st.divider()
+
+st.subheader("🗑️ 개별 내전 이력 삭제")
+matches = database.get_matches()
+if matches:
+    match_options = [f"{m[0]} - [{m[1]}] {m[3].split(' ')[0]} (진행자: {m[2]})" for m in matches]
+    target_match = st.selectbox("삭제할 내전 선택", match_options)
+    
+    if st.button("해당 내전 삭제", type="primary"):
+        match_id_to_delete = int(target_match.split(" - ")[0])
+        database.delete_match(match_id_to_delete)
+        st.success(f"{match_id_to_delete}번 내전이 삭제되었습니다. (관련 파워스코어 증감도 롤백되었습니다.)")
+        st.rerun()
+else:
+    st.info("삭제할 내전 이력이 없습니다.")
+
 
 st.divider()
 
