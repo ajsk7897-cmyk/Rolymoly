@@ -89,7 +89,7 @@ else:
     
     with col1:
         st.write("#### 파워스코어 수기 수정 (티어 기반)")
-        target_id_score = st.selectbox("회원 선택 (수정)", df['ID'].astype(str) + " - " + df['Riot ID'] + "#" + df['Tag Line'], key="score_select")
+        target_id_score = st.selectbox("회원 선택 (수정)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="score_select")
         
         tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
         selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options)
@@ -109,7 +109,7 @@ else:
             
     with col2:
         st.write("#### 수기 별(⭐) 부여")
-        target_id_star = st.selectbox("회원 선택 (별 추가)", df['ID'].astype(str) + " - " + df['Riot ID'] + "#" + df['Tag Line'], key="star_select")
+        target_id_star = st.selectbox("회원 선택 (별 추가)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="star_select")
         new_stars = st.number_input("수기 별 개수 (기본 0)", value=0, min_value=0, step=1)
         if st.button("별 적용", key="btn_star"):
             user_id = int(target_id_star.split(" - ")[0])
@@ -119,7 +119,7 @@ else:
             
     with col3:
         st.write("#### 강제 탈퇴")
-        target_id_kick = st.selectbox("회원 선택 (강퇴)", df['ID'].astype(str) + " - " + df['Riot ID'] + "#" + df['Tag Line'], key="kick_select")
+        target_id_kick = st.selectbox("회원 선택 (강퇴)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="kick_select")
         if st.button("강제 탈퇴", type="primary", key="btn_kick"):
             user_id = int(target_id_kick.split(" - ")[0])
             database.kick_user(user_id)
@@ -128,7 +128,7 @@ else:
 
     with col4:
         st.write("#### 🛡️ 운영진 권한 설정")
-        target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['ID'].astype(str) + " - " + df['Riot ID'] + "#" + df['Tag Line'], key="admin_select")
+        target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="admin_select")
         
         # 기본값을 현재 권한으로 세팅하기 위해 찾기
         current_user_id = int(target_id_admin.split(" - ")[0])
