@@ -19,9 +19,15 @@ def get_gspread_client():
         # 로컬 환경 (credentials.json 파일 사용)
         return gspread.service_account(filename="credentials.json")
 
+@st.cache_resource
 def get_sheet():
     gc = get_gspread_client()
     return gc.open_by_key(SPREADSHEET_ID)
+
+@st.cache_resource
+def get_worksheet(sheet_name):
+    sh = get_sheet()
+    return sh.worksheet(sheet_name)
 
 # init_db is not needed actively if we already created sheets via script, 
 # but we keep it empty or simple to avoid errors from other files
@@ -33,8 +39,7 @@ def clear_cache():
 
 @st.cache_data(ttl=60)
 def get_all_settings():
-    sh = get_sheet()
-    settings_sheet = sh.worksheet("settings")
+    settings_sheet = get_worksheet("settings")
     records = settings_sheet.get_all_records()
     return records
 
@@ -46,8 +51,7 @@ def get_admin_password():
     return 'admin1234'
 
 def set_admin_password(new_password):
-    sh = get_sheet()
-    settings_sheet = sh.worksheet("settings")
+    settings_sheet = get_worksheet("settings")
     cell = settings_sheet.find("admin_password", in_column=1)
     if cell:
         settings_sheet.update_cell(cell.row, cell.col + 1, new_password)
@@ -61,19 +65,30 @@ def _get_next_id(sheet):
     return max(ids) + 1 if ids else 1
 
 def add_user(riot_id, tag_line, birthdate):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     next_id = _get_next_id(users_sheet)
     users_sheet.append_row([
-        next_id, riot_id, tag_line, birthdate, "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0
-    ])
+        next_id, riot_id, f"'{tag_line}", f"'{birthdate}", "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0
+    ], value_input_option='USER_ENTERED')
     clear_cache()
 
 @st.cache_data(ttl=60)
 def get_all_users():
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
-    return users_sheet.get_all_records()
+    users_sheet = get_worksheet("users")
+    rows = users_sheet.get_all_values()
+    if not rows or len(rows) < 2:
+        return []
+    headers = rows[0]
+    records = []
+    for row in rows[1:]:
+        record = {}
+        for i, h in enumerate(headers):
+            val = row[i] if i < len(row) else ''
+            if val.startswith("'"):
+                val = val[1:]
+            record[h] = val
+        records.append(record)
+    return records
 
 def get_pending_users():
     users = get_all_users()
@@ -96,68 +111,62 @@ def get_all_approved_users():
     return approved
 
 def approve_user(user_id, solo_tier, flex_tier, power_score):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update(f"E{cell.row}:H{cell.row}", [["APPROVED", solo_tier, flex_tier, power_score]])
         clear_cache()
 
 def reject_user(user_id):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.delete_rows(cell.row)
         clear_cache()
 
 def update_manual_score(user_id, manual_score):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update_cell(cell.row, 9, manual_score)
         clear_cache()
 
 def update_manual_stars(user_id, stars):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update_cell(cell.row, 10, stars)
         clear_cache()
 
 def update_admin_role(user_id, is_admin):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update_cell(cell.row, 11, is_admin)
         clear_cache()
 
 def kick_user(user_id):
-    sh = get_sheet()
-    users_sheet = sh.worksheet("users")
+    users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update_cell(cell.row, 5, 'KICKED')
         clear_cache()
 
 def delete_all_history():
-    sh = get_sheet()
     try:
-        mp_sheet = sh.worksheet("match_players")
+        mp_sheet = get_worksheet("match_players")
+        matches_sheet = get_worksheet("matches")
+        users_sheet = get_worksheet("users")
+        
         # Keep header
         if mp_sheet.row_count > 1:
             mp_sheet.delete_rows(2, mp_sheet.row_count)
             
-        matches_sheet = sh.worksheet("matches")
         if matches_sheet.row_count > 1:
             matches_sheet.delete_rows(2, matches_sheet.row_count)
         
         # Reset match_bonus for all users
-        users_sheet = sh.worksheet("users")
-        users = users_sheet.get_all_records()
+        users = get_all_users()
         updates = []
         for idx, u in enumerate(users):
             if str(u.get('match_bonus', '0')) != '0':
@@ -170,19 +179,17 @@ def delete_all_history():
     clear_cache()
 
 def delete_match(match_id):
-    sh = get_sheet()
+    matches_sheet = get_worksheet("matches")
+    mp_sheet = get_worksheet("match_players")
+    users_sheet = get_worksheet("users")
     
-    matches_sheet = sh.worksheet("matches")
     matches = matches_sheet.get_all_records()
     match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
-    
-    mp_sheet = sh.worksheet("match_players")
     mps = mp_sheet.get_all_records()
     
     if match_to_delete and match_to_delete['match_type'] == 'NORMAL' and match_to_delete['winning_team'] not in ['아직 모름', '']:
         winning_team = match_to_delete['winning_team']
-        users_sheet = sh.worksheet("users")
-        users = users_sheet.get_all_records()
+        users = get_all_users()
         user_dict = {str(u['id']): u for u in users}
         
         updates = []
@@ -223,8 +230,7 @@ def delete_match(match_id):
 
 @st.cache_data(ttl=60)
 def get_matches():
-    sh = get_sheet()
-    matches_sheet = sh.worksheet("matches")
+    matches_sheet = get_worksheet("matches")
     records = matches_sheet.get_all_records()
     try:
         records = sorted(records, key=lambda x: str(x['match_date']), reverse=True)
@@ -234,12 +240,11 @@ def get_matches():
 
 @st.cache_data(ttl=60)
 def get_match_players(match_id):
-    sh = get_sheet()
-    mp_sheet = sh.worksheet("match_players")
-    users_sheet = sh.worksheet("users")
+    mp_sheet = get_worksheet("match_players")
+    users_sheet = get_worksheet("users")
     
     mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
-    users = {str(u['id']): u for u in users_sheet.get_all_records()}
+    users = {str(u['id']): u for u in get_all_users()}
     
     result = []
     for mp in mps:
@@ -254,9 +259,8 @@ def get_match_players(match_id):
     return result
 
 def add_match(match_type, host, winning_team, players_data):
-    sh = get_sheet()
-    matches_sheet = sh.worksheet("matches")
-    mp_sheet = sh.worksheet("match_players")
+    matches_sheet = get_worksheet("matches")
+    mp_sheet = get_worksheet("match_players")
     
     next_match_id = _get_next_id(matches_sheet)
     matches_sheet.append_row([
@@ -274,11 +278,11 @@ def add_match(match_type, host, winning_team, players_data):
     clear_cache()
     
     if match_type == "NORMAL" and winning_team not in ["아직 모름", ""]:
-        _apply_match_bonus(sh, players_data, winning_team)
+        _apply_match_bonus(players_data, winning_team)
 
 def update_match_winner(match_id, new_winning_team):
-    sh = get_sheet()
-    matches_sheet = sh.worksheet("matches")
+    matches_sheet = get_worksheet("matches")
+    mp_sheet = get_worksheet("match_players")
     
     matches = matches_sheet.get_all_records()
     match = next((m for m in matches if str(m['id']) == str(match_id)), None)
@@ -287,26 +291,24 @@ def update_match_winner(match_id, new_winning_team):
         old_winning_team = match['winning_team']
         
         if match['match_type'] == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
-            mp_sheet = sh.worksheet("match_players")
             mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
             players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-            _rollback_match_bonus(sh, players_data_rollback, old_winning_team)
+            _rollback_match_bonus(players_data_rollback, old_winning_team)
             
         cell = matches_sheet.find(str(match_id), in_column=1)
         if cell:
             matches_sheet.update_cell(cell.row, 5, new_winning_team)
             
         if match['match_type'] == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
-            mp_sheet = sh.worksheet("match_players")
             mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
             players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-            _apply_match_bonus(sh, players_data, new_winning_team)
+            _apply_match_bonus(players_data, new_winning_team)
             
         clear_cache()
 
-def _apply_match_bonus(sh, players_data, winning_team):
-    users_sheet = sh.worksheet("users")
-    users = users_sheet.get_all_records()
+def _apply_match_bonus(players_data, winning_team):
+    users_sheet = get_worksheet("users")
+    users = get_all_users()
     user_dict = {str(u['id']): u for u in users}
     
     updates = []
@@ -330,9 +332,9 @@ def _apply_match_bonus(sh, players_data, winning_team):
     if updates:
         users_sheet.batch_update(updates)
 
-def _rollback_match_bonus(sh, players_data, winning_team):
-    users_sheet = sh.worksheet("users")
-    users = users_sheet.get_all_records()
+def _rollback_match_bonus(players_data, winning_team):
+    users_sheet = get_worksheet("users")
+    users = get_all_users()
     user_dict = {str(u['id']): u for u in users}
     
     updates = []
@@ -358,9 +360,8 @@ def _rollback_match_bonus(sh, players_data, winning_team):
 
 @st.cache_data(ttl=60)
 def get_auction_wins_by_user():
-    sh = get_sheet()
-    matches_sheet = sh.worksheet("matches")
-    mp_sheet = sh.worksheet("match_players")
+    matches_sheet = get_worksheet("matches")
+    mp_sheet = get_worksheet("match_players")
     
     matches = matches_sheet.get_all_records()
     mps = mp_sheet.get_all_records()
@@ -374,5 +375,4 @@ def get_auction_wins_by_user():
                 wins[uid] = wins.get(uid, 0) + 1
     return wins
 
-# Initialize immediately when imported if not exists
 init_db()

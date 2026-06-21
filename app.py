@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.title("⚔️ 롤 클랜 관리 및 내전 시스템")
+st.title("⚔️ 롤 클랜 관리 및 내전 시스템 (V2 업데이트 됨)")
 
 st.markdown("""
 ### 환영합니다!
