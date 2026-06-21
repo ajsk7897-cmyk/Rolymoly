@@ -100,13 +100,16 @@ else:
                     database.update_match_winner(match_id, new_winner)
                     st.rerun()
 
-            cols = st.columns(len(teams))
-            for i, (t_name, members) in enumerate(teams.items()):
-                with cols[i]:
-                    if t_name == winning_team:
-                        st.markdown(f"### 👑 {t_name} (승리)")
-                    else:
-                        st.markdown(f"### {t_name}")
-                        
-                    df = pd.DataFrame(members)
-                    st.dataframe(df, use_container_width=True)
+            if len(teams) > 0:
+                cols = st.columns(len(teams))
+                for i, (t_name, members) in enumerate(teams.items()):
+                    with cols[i]:
+                        if t_name == winning_team:
+                            st.markdown(f"### 👑 {t_name} (승리)")
+                        else:
+                            st.markdown(f"### {t_name}")
+                            
+                        df = pd.DataFrame(members)
+                        st.dataframe(df, use_container_width=True)
+            else:
+                st.warning("이 내전에 등록된 참가자 정보가 없습니다.")
