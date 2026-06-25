@@ -26,7 +26,18 @@ else:
         players = database.get_match_players(match_id)
         for p in players:
             t_name, role, r_id, t_line, p_score, m_score, p_spent, m_bonus = p
-            f_score = (m_score if m_score != -1 else p_score) + m_bonus
+            base_score = m_score if m_score != -1 else p_score
+            f_score = base_score + m_bonus
+            
+            if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
+                bonus_change = int(base_score * 0.05)
+                if t_name == winning_team:
+                    change_str = f"+{bonus_change}점"
+                else:
+                    change_str = f"-{bonus_change}점"
+            else:
+                change_str = "-"
+                
             csv_data.append({
                 "매치번호": match_id,
                 "내전종류": type_str,
@@ -37,7 +48,7 @@ else:
                 "역할/포지션": role,
                 "닉네임": f"{r_id}#{t_line}",
                 "스코어": f_score,
-                "소모포인트": p_spent if match_type == "AUCTION" else "-"
+                "파워스코어 증감": change_str
             })
     
     if csv_data:
@@ -76,12 +87,24 @@ else:
                 t_name, role, r_id, t_line, p_score, m_score, p_spent, m_bonus = p
                 if t_name not in teams:
                     teams[t_name] = []
-                f_score = (m_score if m_score != -1 else p_score) + m_bonus
+                    
+                base_score = m_score if m_score != -1 else p_score
+                f_score = base_score + m_bonus
+                
+                if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
+                    bonus_change = int(base_score * 0.05)
+                    if t_name == winning_team:
+                        change_str = f"+{bonus_change}점"
+                    else:
+                        change_str = f"-{bonus_change}점"
+                else:
+                    change_str = "-"
+                    
                 teams[t_name].append({
                     "역할/포지션": role,
                     "닉네임": f"{r_id}#{t_line}",
                     "스코어": f_score,
-                    "소모포인트": p_spent if match_type == "AUCTION" else "-"
+                    "파워스코어 증감": change_str
                 })
                 
             team_names = list(teams.keys())

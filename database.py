@@ -7,17 +7,20 @@ SPREADSHEET_ID = "1HI0dwaA6HJV9g--lpOpprSO_UoFhFXUleFhI4ur2-44"
 @st.cache_resource
 def get_gspread_client():
     import json
-    if "gcp_service_account" in st.secrets:
-        # Streamlit Cloud Secrets 사용
-        secret_val = st.secrets["gcp_service_account"]
-        if isinstance(secret_val, str):
-            creds_dict = json.loads(secret_val)
-        else:
-            creds_dict = dict(secret_val)
-        return gspread.service_account_from_dict(creds_dict)
-    else:
-        # 로컬 환경 (credentials.json 파일 사용)
-        return gspread.service_account(filename="credentials.json")
+    try:
+        if "gcp_service_account" in st.secrets:
+            # Streamlit Cloud Secrets 사용
+            secret_val = st.secrets["gcp_service_account"]
+            if isinstance(secret_val, str):
+                creds_dict = json.loads(secret_val)
+            else:
+                creds_dict = dict(secret_val)
+            return gspread.service_account_from_dict(creds_dict)
+    except Exception:
+        pass
+        
+    # 로컬 환경 (credentials.json 파일 사용)
+    return gspread.service_account(filename="credentials.json")
 
 @st.cache_resource
 def get_sheet():

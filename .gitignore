@@ -1,0 +1,15 @@
+# Secrets and Credentials
+credentials.json
+credentials.json.json
+
+# Database
+*.db
+clan.db
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv
+venv/
+env/

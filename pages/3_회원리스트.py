@@ -33,12 +33,20 @@ else:
         full_id = f"{riot_id}#{tag_line}"
         role_str = "👑 운영진" if is_admin == 1 else "일반"
         
+        if match_bonus > 0:
+            score_change_str = f"+{match_bonus}점"
+        elif match_bonus < 0:
+            score_change_str = f"{match_bonus}점"
+        else:
+            score_change_str = "0점"
+        
         data.append({
             "권한": role_str,
             "🌟 우승 횟수": stars,
             "롤 아이디": full_id,
             "솔로랭크": solo_tier,
             "자유랭크": flex_tier,
+            "파워스코어 증감": score_change_str,
             "최종 파워스코어": final_score
         })
         
