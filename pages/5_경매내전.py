@@ -22,11 +22,11 @@ div[data-testid="stToast"] {
 st.title("💰 경매 내전")
 
 if st.session_state.get("current_page") != "경매내전":
-    st.toast('팝업 알림으로 팀 배정 후 팀 확정 버튼 누르는거 잊지말아주세요~')
+    st.toast('팀 배정 후 팀 확정 버튼 누르는거 잊지말아주세요~')
     st.session_state.current_page = "경매내전"
 
 if st.session_state.get("auction_saved_toast", False):
-    st.toast('내전 종료 후 내전이력 탭에서 결과 입력 꼭 해주세요~')
+    st.toast('내전 종료 후 내전이력에서 결과 등록 부탁드려요~')
     st.success("경매 내전 이력이 성공적으로 저장되었습니다!")
     st.session_state.auction_saved_toast = False
 
