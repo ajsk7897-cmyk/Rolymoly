@@ -10,27 +10,107 @@ TIER_SCORE_MAP = {
     "Platinum 4": 200, "Platinum 3": 210, "Platinum 2": 220, "Platinum 1": 230,
     "Emerald 4": 280, "Emerald 3": 300, "Emerald 2": 320, "Emerald 1": 340,
     "Diamond 4": 390, "Diamond 3": 420, "Diamond 2": 450, "Diamond 1": 480,
-    "Master": 600, "Grandmaster": 800, "Challenger": 1000
+    "Master": 550, "Grandmaster": 800, "Challenger": 1000
 }
 
+TIER_ORDER = [
+    "Iron 4", "Iron 3", "Iron 2", "Iron 1",
+    "Bronze 4", "Bronze 3", "Bronze 2", "Bronze 1",
+    "Silver 4", "Silver 3", "Silver 2", "Silver 1",
+    "Gold 4", "Gold 3", "Gold 2", "Gold 1",
+    "Platinum 4", "Platinum 3", "Platinum 2", "Platinum 1",
+    "Emerald 4", "Emerald 3", "Emerald 2", "Emerald 1",
+    "Diamond 4", "Diamond 3", "Diamond 2", "Diamond 1",
+    "Master", "Grandmaster", "Challenger"
+]
+
 def calculate_power_score(solo_tier_str, flex_tier_str):
-    def get_base_points(tier_str):
+    def get_solo_points(tier_str):
         if not tier_str or tier_str == "Unranked":
             return 0
-        # Clean tier string, e.g., "Diamond 1", "Master"
+            
         clean_tier = re.sub(r' \d+ LP', '', tier_str).strip()
         
-        matched_score = 0
+        # Check Master LP
+        if clean_tier == "Master":
+            lp_match = re.search(r'(\d+) LP', tier_str)
+            if lp_match:
+                lp = int(lp_match.group(1))
+                if lp >= 200:
+                    return 700
+                elif lp >= 100:
+                    return 600
+                else:
+                    return 550
+            return 600 # Fallback for Master if no LP
+            
         for k, v in TIER_SCORE_MAP.items():
             if clean_tier.startswith(k):
-                matched_score = v
-                break
-                
-        return matched_score
+                return v
+        return 0
 
-    solo_points = get_base_points(solo_tier_str)
-    flex_points = int(get_base_points(flex_tier_str) * 0.1) # 10% of base score, truncated
+    def get_flex_points(tier_str):
+        if not tier_str or tier_str == "Unranked":
+            return 0
+        clean_tier = re.sub(r' \d+ LP', '', tier_str).strip()
+        
+        if clean_tier in TIER_ORDER:
+            return TIER_ORDER.index(clean_tier) + 1
+            
+        for t in TIER_ORDER:
+            if clean_tier.startswith(t):
+                return TIER_ORDER.index(t) + 1
+        return 0
+
+    solo_points = get_solo_points(solo_tier_str)
+    flex_points = get_flex_points(flex_tier_str)
     return solo_points + flex_points
+
+def calculate_mmr_delta(solo_tier_str):
+    if not solo_tier_str or solo_tier_str == "Unranked":
+        return 2 # default for unranked
+        
+    clean_tier = re.sub(r' \d+ LP', '', solo_tier_str).strip()
+    
+    # Check if exact match exists in TIER_ORDER
+    matched_tier = None
+    for t in TIER_ORDER:
+        if clean_tier.startswith(t):
+            matched_tier = t
+            break
+            
+    if not matched_tier:
+        return 2
+        
+    idx = TIER_ORDER.index(matched_tier)
+    
+    if matched_tier == "Challenger":
+        return 10
+        
+    next_tier = TIER_ORDER[idx + 1]
+    
+    # Calculate score difference
+    curr_score = TIER_SCORE_MAP.get(matched_tier, 0)
+    next_score = TIER_SCORE_MAP.get(next_tier, 0)
+    
+    # Master is special case in solo point, but TIER_SCORE_MAP has base 550 for Master, wait we don't have Master in map!
+    # I need to add Master to TIER_SCORE_MAP! 
+    # Let me add it to the map above in a separate chunk.
+    
+    diff = next_score - curr_score
+    if diff < 0:
+        diff = 10
+        
+    delta = diff // 5
+    return max(1, delta)
+
+def calculate_clan_tier(final_score):
+    # Reverse mapping
+    sorted_tiers = sorted(TIER_SCORE_MAP.items(), key=lambda x: x[1], reverse=True)
+    for tier, score in sorted_tiers:
+        if final_score >= score:
+            return tier
+    return "Iron 4"
 
 def fetch_tier_data(riot_id, tag_line):
     """
@@ -61,13 +141,21 @@ def fetch_tier_data(riot_id, tag_line):
                     tier_part = parts[1]
                     # Format: "Platinum 4 12LP" or "Challenger 1 1684LP"
                     if 'Win' not in tier_part and 'Lose' not in tier_part:
-                        m = re.match(r'([A-Za-z]+)\s*(\d)?', tier_part)
+                        m = re.match(r'([A-Za-z]+)\s*(\d)?\s*(\d+)?LP?', tier_part.replace(' ', ''))
+                        if not m:
+                            # Try simple split
+                            m = re.match(r'([A-Za-z]+)\s*(\d)?', tier_part)
+                            
                         if m:
                             t_str = m.group(1).title()
                             d_str = m.group(2) if m.group(2) else ""
-                            # Special case: Master/Grandmaster/Challenger usually don't need division in our map
+                            # Special case: Master/Grandmaster/Challenger
                             if t_str in ["Master", "Grandmaster", "Challenger"]:
-                                solo_tier = t_str
+                                lp_str = ""
+                                lp_match = re.search(r'(\d+)LP', tier_part.replace(' ', ''))
+                                if lp_match:
+                                    lp_str = f" {lp_match.group(1)} LP"
+                                solo_tier = f"{t_str}{lp_str}"
                             else:
                                 solo_tier = f"{t_str} {d_str}".strip()
             
@@ -97,7 +185,8 @@ def fetch_tier_data(riot_id, tag_line):
                 # Only one rank exists (typically Solo Rank)
                 t_solo = tiers[0].title()
                 if t_solo in ["Master", "Grandmaster", "Challenger"]:
-                    solo_tier = t_solo
+                    if solo_tier == "Unranked": # Only set if Method 1 failed to get LP
+                        solo_tier = t_solo
                 elif solo_tier == "Unranked":
                     solo_tier = t_solo
 

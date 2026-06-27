@@ -73,15 +73,73 @@ else:
 st.divider()
 
 st.subheader("👥 기존 회원 리스트")
+
+# Score table expander
+with st.expander("현재 점수 배점표 확인"):
+    st.markdown("""
+    **[ 솔로랭크 스코어 배점표 ]**
+    - 마스터: 550점 (100LP 이상: 600점, 200LP 이상: 700점)
+    - 그랜드마스터: 800점
+    - 챌린저: 1000점
+    - 다이아몬드: 390점 ~ 480점
+    - 에메랄드: 280점 ~ 340점
+    - 플래티넘: 200점 ~ 230점
+    - 골드: 120점 ~ 150점
+    - 실버: 60점 ~ 90점
+    - 브론즈: 20점 ~ 50점
+    - 아이언: 10점
+
+    **[ 자유랭크 선형(Linear) 누적 점수 ]**
+    - 아이언 4 (1점)부터 시작하여 한 단계(서브 티어) 올라갈 때마다 정확히 +1점씩 선형 누적. (예: 브론즈 4 = 5점)
+    """)
+
+search_query = st.text_input("🔍 회원 이름 검색", placeholder="닉네임을 입력하세요...")
+
 approved_users = database.get_all_approved_users()
+user_stats = database.get_user_stats()
 
 if not approved_users:
     st.info("등록된 회원이 없습니다.")
 else:
-    df = pd.DataFrame(approved_users, columns=['ID', 'Riot ID', 'Tag Line', '솔로랭크', '자유랭크', 'Power Score', 'Manual Score', 'Manual Stars', 'is_admin', 'Match Bonus'])
-    df['Final Score'] = df.apply(lambda row: (row['Manual Score'] if row['Manual Score'] != -1 else row['Power Score']) + row['Match Bonus'], axis=1)
-    
-    st.dataframe(df, use_container_width=True)
+    data = []
+    for user in approved_users:
+        if len(user) == 12:
+            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
+        else:
+            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+            main_pos, sub_pos = "", ""
+            
+        full_id = f"{riot_id}#{tag_line}"
+        if search_query and search_query.lower() not in full_id.lower():
+            continue
+            
+        final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
+        
+        stats = user_stats.get(user_id, {'total': 0, 'wins': 0, 'win_rate': 0})
+        
+        data.append({
+            'ID': user_id,
+            'Riot ID': riot_id,
+            'Tag Line': tag_line,
+            '주 포지션': main_pos,
+            '부 포지션': sub_pos,
+            '총 판수': stats['total'],
+            '승률(%)': stats['win_rate'],
+            '솔로랭크': solo_tier,
+            '자유랭크': flex_tier,
+            'Power Score': power_score,
+            'Manual Score': manual_score,
+            'Manual Stars': manual_stars,
+            'is_admin': is_admin,
+            'Match Bonus': match_bonus,
+            'Final Score': final_score
+        })
+        
+    df = pd.DataFrame(data)
+    if df.empty:
+        st.warning("검색 결과가 없습니다.")
+    else:
+        st.dataframe(df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
     col1, col2 = st.columns(2)
@@ -140,6 +198,37 @@ else:
             database.update_admin_role(current_user_id, val)
             st.success("권한이 변경되었습니다.")
             st.rerun()
+
+    st.markdown("---")
+    st.write("#### 📝 포지션 정보 수정")
+    target_id_pos = st.selectbox("회원 선택 (포지션 수정)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="pos_select")
+    
+    current_user_id_pos = int(target_id_pos.split(" - ")[0])
+    current_main_pos = df[df['ID'] == current_user_id_pos]['주 포지션'].values[0]
+    current_sub_pos = df[df['ID'] == current_user_id_pos]['부 포지션'].values[0]
+    
+    positions_list = ["탑", "정글", "미드", "원딜", "서폿", ""]
+    
+    try:
+        main_index = positions_list.index(current_main_pos)
+    except ValueError:
+        main_index = 0
+        
+    try:
+        sub_index = positions_list.index(current_sub_pos)
+    except ValueError:
+        sub_index = 0
+
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=main_index)
+    with col_p2:
+        new_sub_pos = st.selectbox("부 포지션 (수정)", positions_list, index=sub_index)
+        
+    if st.button("포지션 적용", key="btn_pos"):
+        database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
+        st.success("포지션이 성공적으로 변경되었습니다.")
+        st.rerun()
 
 st.divider()
 

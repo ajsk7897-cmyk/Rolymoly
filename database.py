@@ -67,11 +67,11 @@ def _get_next_id(sheet):
     ids = [int(r['id']) for r in records if str(r['id']).isdigit()]
     return max(ids) + 1 if ids else 1
 
-def add_user(riot_id, tag_line, birthdate):
+def add_user(riot_id, tag_line, birthdate, main_position='', sub_position=''):
     users_sheet = get_worksheet("users")
     next_id = _get_next_id(users_sheet)
     users_sheet.append_row([
-        next_id, riot_id, f"'{tag_line}", f"'{birthdate}", "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0
+        next_id, riot_id, f"'{tag_line}", f"'{birthdate}", "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0, main_position, sub_position
     ], value_input_option='USER_ENTERED')
     clear_cache()
 
@@ -109,7 +109,8 @@ def get_all_approved_users():
             approved.append((
                 int(u['id']), u['riot_id'], u['tag_line'], u['solo_tier'], 
                 u['flex_tier'], int(u['power_score']), int(u['manual_score']), 
-                int(u['manual_stars']), int(u['is_admin']), int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+                int(u['manual_stars']), int(u['is_admin']), int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0),
+                u.get('main_position', ''), u.get('sub_position', '')
             ))
     return approved
 
@@ -132,6 +133,27 @@ def update_manual_score(user_id, manual_score):
     cell = users_sheet.find(str(user_id), in_column=1)
     if cell:
         users_sheet.update_cell(cell.row, 9, manual_score)
+        clear_cache()
+
+def update_user_positions(user_id, main_pos, sub_pos):
+    users_sheet = get_worksheet("users")
+    rows = users_sheet.get_all_values()
+    headers = rows[0]
+    
+    col_main = headers.index('main_position') + 1 if 'main_position' in headers else 14
+    col_sub = headers.index('sub_position') + 1 if 'sub_position' in headers else 15
+    
+    if 'main_position' not in headers:
+        users_sheet.update_cell(1, 14, 'main_position')
+        col_main = 14
+    if 'sub_position' not in headers:
+        users_sheet.update_cell(1, 15, 'sub_position')
+        col_sub = 15
+
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update_cell(cell.row, col_main, main_pos)
+        users_sheet.update_cell(cell.row, col_sub, sub_pos)
         clear_cache()
 
 def update_manual_stars(user_id, stars):
@@ -209,6 +231,9 @@ def delete_match(match_id):
                         current_bonus -= bonus_change # rollback win
                     else:
                         current_bonus += bonus_change # rollback loss
+                        
+                    # Cap at -base_score to prevent final score < 0
+                    current_bonus = max(-base_score, current_bonus)
                         
                     cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
                     updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
@@ -310,6 +335,10 @@ def update_match_winner(match_id, new_winning_team):
         clear_cache()
 
 def _apply_match_bonus(players_data, winning_team):
+    import sys, os
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from utils.tier_fetcher import calculate_mmr_delta
+
     users_sheet = get_worksheet("users")
     users = get_all_users()
     user_dict = {str(u['id']): u for u in users}
@@ -321,13 +350,18 @@ def _apply_match_bonus(players_data, winning_team):
         if uid in user_dict:
             u = user_dict[uid]
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-            bonus_change = int(base_score * 0.05)
+            
+            solo_tier = u.get('solo_tier', 'Unranked')
+            bonus_change = calculate_mmr_delta(solo_tier)
+            
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
             if team_name == winning_team:
                 current_bonus += bonus_change
             else:
                 current_bonus -= bonus_change
+                
+            current_bonus = max(-base_score, current_bonus)
                 
             cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
             updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
@@ -336,6 +370,10 @@ def _apply_match_bonus(players_data, winning_team):
         users_sheet.batch_update(updates)
 
 def _rollback_match_bonus(players_data, winning_team):
+    import sys, os
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from utils.tier_fetcher import calculate_mmr_delta
+
     users_sheet = get_worksheet("users")
     users = get_all_users()
     user_dict = {str(u['id']): u for u in users}
@@ -347,7 +385,10 @@ def _rollback_match_bonus(players_data, winning_team):
         if uid in user_dict:
             u = user_dict[uid]
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-            bonus_change = int(base_score * 0.05)
+            
+            solo_tier = u.get('solo_tier', 'Unranked')
+            bonus_change = calculate_mmr_delta(solo_tier)
+            
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
             if team_name == winning_team:
@@ -355,11 +396,41 @@ def _rollback_match_bonus(players_data, winning_team):
             else:
                 current_bonus += bonus_change
                 
+            current_bonus = max(-base_score, current_bonus)
+                
             cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
             updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
                 
     if updates:
         users_sheet.batch_update(updates)
+
+@st.cache_data(ttl=60)
+def get_user_stats():
+    users = get_all_users()
+    matches = get_worksheet("matches").get_all_records() if get_worksheet("matches").row_count > 1 else []
+    mp_sheet = get_worksheet("match_players").get_all_records() if get_worksheet("match_players").row_count > 1 else []
+    
+    stats = {}
+    for u in users:
+        if u['status'] == 'APPROVED':
+            stats[int(u['id'])] = {'total': 0, 'wins': 0, 'win_rate': 0}
+            
+    valid_matches = {str(m['id']): m['winning_team'] for m in matches if m['match_type'] == 'NORMAL' and m['winning_team'] not in ['', '아직 모름']}
+    
+    for mp in mp_sheet:
+        uid = int(mp['user_id'])
+        mid = str(mp['match_id'])
+        if uid in stats and mid in valid_matches:
+            stats[uid]['total'] += 1
+            if mp['team_name'] == valid_matches[mid]:
+                stats[uid]['wins'] += 1
+                
+    for uid in stats:
+        t = stats[uid]['total']
+        w = stats[uid]['wins']
+        stats[uid]['win_rate'] = round((w / t * 100), 1) if t > 0 else 0
+        
+    return stats
 
 @st.cache_data(ttl=60)
 def get_auction_wins_by_user():

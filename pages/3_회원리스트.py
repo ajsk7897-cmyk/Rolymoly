@@ -5,12 +5,16 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
+from utils.tier_fetcher import calculate_clan_tier
 
 st.set_page_config(page_title="회원 리스트", page_icon="👥", layout="wide")
 
 st.title("👥 회원 리스트")
 
 st.markdown("클랜에 가입된 모든 회원 목록입니다. 🌟(별표)는 경매 내전 우승 횟수를 의미합니다.")
+
+# Search functionality
+search_query = st.text_input("🔍 클랜원 닉네임 검색", placeholder="닉네임을 입력하세요...")
 
 # Fetch data
 approved_users = database.get_all_approved_users()
@@ -21,7 +25,16 @@ if not approved_users:
 else:
     data = []
     for user in approved_users:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+        if len(user) == 12:
+            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
+        else: # Fallback in case of old data structure
+            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+            main_pos, sub_pos = "", ""
+            
+        full_id = f"{riot_id}#{tag_line}"
+        
+        if search_query and search_query.lower() not in full_id.lower():
+            continue
         
         # Calculate final score
         final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
@@ -40,17 +53,25 @@ else:
         else:
             score_change_str = "0점"
         
+        clan_tier = calculate_clan_tier(final_score)
+        
         data.append({
+            "클랜 티어": clan_tier,
             "권한": role_str,
             "🌟 우승 횟수": stars,
             "롤 아이디": full_id,
+            "주 포지션": main_pos,
+            "부 포지션": sub_pos,
             "솔로랭크": solo_tier,
             "자유랭크": flex_tier,
             "파워스코어 증감": score_change_str,
             "최종 파워스코어": final_score
         })
         
-    df = pd.DataFrame(data)
+    if not data:
+        st.warning("검색 결과가 없습니다.")
+    else:
+        df = pd.DataFrame(data)
     
     # Sort by Power Score descending
     df = df.sort_values(by="최종 파워스코어", ascending=False).reset_index(drop=True)

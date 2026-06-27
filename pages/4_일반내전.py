@@ -20,7 +20,10 @@ if not approved_users or len(approved_users) < 10:
 
 # Helper to format user for selectbox
 def format_user(user):
-    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+    if len(user) == 12:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
+    else:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
     final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
     return f"{riot_id}#{tag_line} ({solo_tier} / 스코어: {final_score})", user_id, final_score, riot_id
 
@@ -139,20 +142,37 @@ if "team_a" in st.session_state:
         st.rerun()
 
     st.markdown("---")
-    with st.form("confirm_match_form"):
-        winning_team = st.selectbox("승리 팀 기록 (선택)", ["아직 모름", "Team A", "Team B"])
-        confirm = st.form_submit_button("팀 확정 및 DB 저장", type="primary")
+    
+    if "confirm_step_1" not in st.session_state:
+        st.session_state.confirm_step_1 = False
         
-        if confirm:
-            players_data = []
-            for role in roles:
-                players_data.append((st.session_state.team_a[role], "Team A", role, 0))
-                players_data.append((st.session_state.team_b[role], "Team B", role, 0))
-            
-            database.add_match("NORMAL", st.session_state.match_host, winning_team, players_data)
-            st.success("내전 이력이 성공적으로 저장되었습니다!")
-            # Clear state
-            del st.session_state.team_a
-            del st.session_state.team_b
-            del st.session_state.match_participants
-            del st.session_state.match_host
+    winning_team = st.selectbox("승리 팀 기록 (선택)", ["아직 모름", "Team A", "Team B"])
+    
+    if st.button("팀 확정 및 DB 저장", type="primary"):
+        st.session_state.confirm_step_1 = True
+        
+    if st.session_state.confirm_step_1:
+        st.warning("⚠️ 전적을 최종 확정하시겠습니까? (이 작업은 되돌릴 수 없습니다)")
+        col_c1, col_c2 = st.columns([1, 1])
+        with col_c1:
+            if st.button("✅ 네, 확정합니다", type="primary", use_container_width=True):
+                players_data = []
+                for role in roles:
+                    players_data.append((st.session_state.team_a[role], "Team A", role, 0))
+                    players_data.append((st.session_state.team_b[role], "Team B", role, 0))
+                
+                database.add_match("NORMAL", st.session_state.match_host, winning_team, players_data)
+                st.success("내전 이력이 성공적으로 저장되었습니다!")
+                
+                # Clear state
+                st.session_state.confirm_step_1 = False
+                del st.session_state.team_a
+                del st.session_state.team_b
+                del st.session_state.match_participants
+                del st.session_state.match_host
+                st.rerun()
+                
+        with col_c2:
+            if st.button("❌ 취소", use_container_width=True):
+                st.session_state.confirm_step_1 = False
+                st.rerun()

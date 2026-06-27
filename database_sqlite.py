@@ -24,7 +24,9 @@ def init_db():
             manual_score INTEGER DEFAULT -1,
             manual_stars INTEGER DEFAULT 0,
             is_admin INTEGER DEFAULT 0,
-            join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            main_position TEXT DEFAULT '',
+            sub_position TEXT DEFAULT ''
         )
     ''')
     
@@ -81,11 +83,11 @@ def set_admin_password(new_password):
     conn.commit()
     conn.close()
 
-def add_user(riot_id, tag_line, birthdate):
+def add_user(riot_id, tag_line, birthdate, main_position='', sub_position=''):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("INSERT INTO users (riot_id, tag_line, birthdate) VALUES (?, ?, ?)",
-              (riot_id, tag_line, birthdate))
+    c.execute("INSERT INTO users (riot_id, tag_line, birthdate, main_position, sub_position) VALUES (?, ?, ?, ?, ?)",
+              (riot_id, tag_line, birthdate, main_position, sub_position))
     conn.commit()
     conn.close()
 
@@ -119,7 +121,7 @@ def get_all_approved_users():
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin 
+        SELECT id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, main_position, sub_position 
         FROM users WHERE status = 'APPROVED'
     ''')
     users = c.fetchall()
@@ -130,6 +132,13 @@ def update_manual_score(user_id, manual_score):
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE users SET manual_score = ? WHERE id = ?", (manual_score, user_id))
+    conn.commit()
+    conn.close()
+
+def update_user_positions(user_id, main_pos, sub_pos):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET main_position = ?, sub_position = ? WHERE id = ?", (main_pos, sub_pos, user_id))
     conn.commit()
     conn.close()
 
@@ -189,6 +198,30 @@ def get_matches():
     matches = c.fetchall()
     conn.close()
     return matches
+
+def get_user_stats():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT 
+            u.id,
+            COUNT(mp.id) as total_matches,
+            SUM(CASE WHEN m.winning_team = mp.team_name THEN 1 ELSE 0 END) as wins
+        FROM users u
+        LEFT JOIN match_players mp ON u.id = mp.user_id
+        LEFT JOIN matches m ON mp.match_id = m.id AND m.match_type = 'NORMAL' AND m.winning_team NOT IN ('', '아직 모름')
+        WHERE u.status = 'APPROVED'
+        GROUP BY u.id
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    
+    stats = {}
+    for row in rows:
+        uid, total, wins = row
+        win_rate = round((wins / total * 100), 1) if total and total > 0 else 0
+        stats[uid] = {'total': total or 0, 'wins': wins or 0, 'win_rate': win_rate}
+    return stats
 
 def get_match_players(match_id):
     conn = get_connection()

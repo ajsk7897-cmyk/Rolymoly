@@ -15,11 +15,18 @@ if not approved_users or len(approved_users) < 10:
     st.warning("승인된 회원이 부족하여 경매 내전을 진행할 수 없습니다.")
     st.stop()
 
+from utils.tier_fetcher import calculate_clan_tier
+
 # Helpers
 def format_user(user):
-    user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+    if len(user) == 12:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
+    else:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
+        main_pos, sub_pos = "", ""
     final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
-    return f"{riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score
+    clan_tier = calculate_clan_tier(final_score)
+    return f"{riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, clan_tier, main_pos, sub_pos
 
 user_options = [format_user(u) for u in approved_users]
 user_dict = {u[1]: u for u in user_options}
@@ -136,7 +143,7 @@ else:
                 
         if st.session_state.current_target:
             t_user = user_dict[st.session_state.current_target]
-            st.info(f"### 현재 대상: {t_user[0]}")
+            st.info(f"### 현재 대상: {t_user[0]}\n**클랜 티어**: {t_user[3]} | **주 포지션**: {t_user[4]} | **부 포지션**: {t_user[5]}")
             
             # Action: Skip
             if st.button("⏭️ 유찰 (다음 뽑기에서 제외)"):
