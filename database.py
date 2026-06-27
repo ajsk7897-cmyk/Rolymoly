@@ -128,6 +128,22 @@ def update_user_tier_info(user_id, solo_tier, flex_tier, power_score):
         users_sheet.update(f"F{cell.row}:H{cell.row}", [[solo_tier, flex_tier, power_score]])
         clear_cache()
 
+def batch_update_user_tiers(tier_updates):
+    users_sheet = get_worksheet("users")
+    users = get_all_users()
+    
+    updates = []
+    for idx, u in enumerate(users):
+        uid = int(u['id'])
+        if uid in tier_updates:
+            solo_tier, flex_tier, power_score = tier_updates[uid]
+            cell_row = idx + 2
+            updates.append({'range': f"F{cell_row}:H{cell_row}", 'values': [[solo_tier, flex_tier, power_score]]})
+            
+    if updates:
+        users_sheet.batch_update(updates)
+        clear_cache()
+
 def reject_user(user_id):
     users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)

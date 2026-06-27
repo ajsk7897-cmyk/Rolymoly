@@ -82,6 +82,7 @@ if st.button("🔄 회원 전체 티어 최신화"):
     my_bar = st.progress(0, text=progress_text)
     approved_users_for_update = database.get_all_approved_users()
     
+    tier_updates = {}
     total = len(approved_users_for_update)
     for i, u in enumerate(approved_users_for_update):
         user_id = int(u[0])
@@ -89,9 +90,11 @@ if st.button("🔄 회원 전체 티어 최신화"):
         tag_line = u[2]
         
         solo_tier, flex_tier, power_score = fetch_tier_data(riot_id, tag_line)
-        database.update_user_tier_info(user_id, solo_tier, flex_tier, power_score)
+        tier_updates[user_id] = (solo_tier, flex_tier, power_score)
         
         my_bar.progress((i + 1) / total, text=f"{progress_text} ({i+1}/{total})")
+        
+    database.batch_update_user_tiers(tier_updates)
     
     my_bar.empty()
     st.success("모든 회원의 티어 정보가 최신화되었습니다.")
