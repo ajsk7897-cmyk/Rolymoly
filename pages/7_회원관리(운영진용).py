@@ -23,7 +23,10 @@ if not st.session_state.admin_authenticated:
         approved_users = database.get_all_approved_users()
         is_valid_admin = False
         for u in approved_users:
-            u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus = u
+            if len(u) == 12:
+                u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus, main_pos, sub_pos = u
+            else:
+                u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus = u
             if is_admin == 1:
                 full_name = f"{r_id}#{t_line}".lower()
                 if admin_id_input.strip().lower() == full_name:
