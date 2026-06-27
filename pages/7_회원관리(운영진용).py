@@ -107,6 +107,7 @@ with st.expander("현재 점수 배점표 확인"):
     - 아이언 4 (1점)부터 시작하여 한 단계(서브 티어) 올라갈 때마다 정확히 +1점씩 선형 누적. (예: 브론즈 4 = 5점)
     """)
 
+approved_users = database.get_all_approved_users()
 search_query = st.selectbox("🔍 회원 이름 검색", options=["전체"] + [f"{u[1]}#{u[2]}" for u in approved_users]) if approved_users else "전체"
 
 user_stats = database.get_user_stats()
