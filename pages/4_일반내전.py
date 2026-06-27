@@ -11,6 +11,15 @@ st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide"
 
 st.title("⚔️ 일반 내전 (10인 밸런스 매칭)")
 
+if st.session_state.get("current_page") != "일반내전":
+    st.toast('팝업 알림으로 팀 배정 후 팀 확정 버튼 누르는거 잊지말아주세요~')
+    st.session_state.current_page = "일반내전"
+
+if st.session_state.get("normal_saved_toast", False):
+    st.toast('내전 종료 후 내전이력 탭에서 결과 입력 꼭 해주세요~')
+    st.success("내전 이력이 성공적으로 저장되었습니다!")
+    st.session_state.normal_saved_toast = False
+
 st.markdown("라인별로 2명씩 총 10명의 참가자를 선택하면, 파워스코어 차이가 최소화되도록 팀을 자동 배정합니다.")
 
 approved_users = database.get_all_approved_users()
@@ -164,7 +173,7 @@ if "team_a" in st.session_state:
                     players_data.append((st.session_state.team_b[role], "Team B", role, 0))
                 
                 database.add_match("NORMAL", st.session_state.match_host, winning_team, players_data)
-                st.success("내전 이력이 성공적으로 저장되었습니다!")
+                st.session_state.normal_saved_toast = True
                 
                 # Clear state
                 st.session_state.confirm_step_1 = False

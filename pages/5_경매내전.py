@@ -10,6 +10,15 @@ st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
 
 st.title("💰 경매 내전")
 
+if st.session_state.get("current_page") != "경매내전":
+    st.toast('팝업 알림으로 팀 배정 후 팀 확정 버튼 누르는거 잊지말아주세요~')
+    st.session_state.current_page = "경매내전"
+
+if st.session_state.get("auction_saved_toast", False):
+    st.toast('내전 종료 후 내전이력 탭에서 결과 입력 꼭 해주세요~')
+    st.success("경매 내전 이력이 성공적으로 저장되었습니다!")
+    st.session_state.auction_saved_toast = False
+
 approved_users = database.get_all_approved_users()
 if not approved_users or len(approved_users) < 10:
     st.warning("승인된 회원이 부족하여 경매 내전을 진행할 수 없습니다.")
@@ -218,7 +227,7 @@ else:
                     players_data.append((m['user_id'], team['name'], m['role'], m['points_spent']))
             
             database.add_match("AUCTION", st.session_state.host_name, winning_team, players_data)
-            st.success("경매 내전 이력이 성공적으로 저장되었습니다!")
+            st.session_state.auction_saved_toast = True
             # Reset state
             st.session_state.auction_started = False
             del st.session_state.host_name
@@ -227,3 +236,4 @@ else:
             del st.session_state.remaining_pool
             del st.session_state.skipped_pool
             del st.session_state.current_target
+            st.rerun()
