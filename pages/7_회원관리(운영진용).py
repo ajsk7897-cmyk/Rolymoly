@@ -77,6 +77,26 @@ st.divider()
 
 st.subheader("👥 기존 회원 리스트")
 
+if st.button("🔄 회원 전체 티어 최신화"):
+    progress_text = "회원 티어 정보를 갱신 중입니다..."
+    my_bar = st.progress(0, text=progress_text)
+    approved_users_for_update = database.get_all_approved_users()
+    
+    total = len(approved_users_for_update)
+    for i, u in enumerate(approved_users_for_update):
+        user_id = int(u[0])
+        riot_id = u[1]
+        tag_line = u[2]
+        
+        solo_tier, flex_tier, power_score = fetch_tier_data(riot_id, tag_line)
+        database.update_user_tier_info(user_id, solo_tier, flex_tier, power_score)
+        
+        my_bar.progress((i + 1) / total, text=f"{progress_text} ({i+1}/{total})")
+    
+    my_bar.empty()
+    st.success("모든 회원의 티어 정보가 최신화되었습니다.")
+    st.rerun()
+
 # Style expander header to be dark yellow
 st.markdown("""
 <style>

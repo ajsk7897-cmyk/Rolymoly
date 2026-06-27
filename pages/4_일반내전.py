@@ -9,6 +9,16 @@ from utils.tier_fetcher import calculate_clan_tier
 
 st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide")
 
+st.markdown("""
+<style>
+div[data-testid="stToast"] {
+    transform: scale(2);
+    transform-origin: top right;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 st.title("⚔️ 일반 내전 (10인 밸런스 매칭)")
 
 if st.session_state.get("current_page") != "일반내전":

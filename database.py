@@ -121,6 +121,13 @@ def approve_user(user_id, solo_tier, flex_tier, power_score):
         users_sheet.update(f"E{cell.row}:H{cell.row}", [["APPROVED", solo_tier, flex_tier, power_score]])
         clear_cache()
 
+def update_user_tier_info(user_id, solo_tier, flex_tier, power_score):
+    users_sheet = get_worksheet("users")
+    cell = users_sheet.find(str(user_id), in_column=1)
+    if cell:
+        users_sheet.update(f"F{cell.row}:H{cell.row}", [[solo_tier, flex_tier, power_score]])
+        clear_cache()
+
 def reject_user(user_id):
     users_sheet = get_worksheet("users")
     cell = users_sheet.find(str(user_id), in_column=1)

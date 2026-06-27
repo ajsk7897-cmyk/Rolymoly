@@ -8,6 +8,16 @@ import database
 
 st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
 
+st.markdown("""
+<style>
+div[data-testid="stToast"] {
+    transform: scale(2);
+    transform-origin: top right;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 st.title("💰 경매 내전")
 
 if st.session_state.get("current_page") != "경매내전":
