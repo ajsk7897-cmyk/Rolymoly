@@ -13,6 +13,7 @@ st.markdown("""
 div[data-testid="stToast"] {
     transform: scale(2);
     transform-origin: top right;
+    background-color: #e6ffe6 !important;
 }
 </style>
 """, unsafe_allow_html=True)
