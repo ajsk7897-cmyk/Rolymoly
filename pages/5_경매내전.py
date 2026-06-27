@@ -26,7 +26,7 @@ def format_user(user):
         main_pos, sub_pos = "", ""
     final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
     clan_tier = calculate_clan_tier(final_score)
-    return f"{riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, clan_tier, main_pos, sub_pos
+    return f"[{clan_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, clan_tier, main_pos, sub_pos
 
 user_options = [format_user(u) for u in approved_users]
 user_dict = {u[1]: u for u in user_options}

@@ -13,12 +13,15 @@ st.title("👥 회원 리스트")
 
 st.markdown("클랜에 가입된 모든 회원 목록입니다. 🌟(별표)는 경매 내전 우승 횟수를 의미합니다.")
 
-# Search functionality
-search_query = st.text_input("🔍 클랜원 닉네임 검색", placeholder="닉네임을 입력하세요...")
-
 # Fetch data
 approved_users = database.get_all_approved_users()
 auction_wins = database.get_auction_wins_by_user()
+
+# Search functionality (Dropdown + Typing)
+user_names = [f"{u[1]}#{u[2]}" for u in approved_users] if approved_users else []
+search_query = st.selectbox("🔍 클랜원 닉네임 검색", options=["전체"] + user_names)
+
+
 
 if not approved_users:
     st.info("아직 승인된 회원이 없습니다.")
@@ -33,7 +36,7 @@ else:
             
         full_id = f"{riot_id}#{tag_line}"
         
-        if search_query and search_query.lower() not in full_id.lower():
+        if search_query != "전체" and search_query != full_id:
             continue
         
         # Calculate final score

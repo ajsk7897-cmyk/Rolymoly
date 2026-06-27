@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
-from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP
+from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier
 
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
 
@@ -77,6 +77,17 @@ st.divider()
 
 st.subheader("👥 기존 회원 리스트")
 
+# Style expander header to be dark yellow
+st.markdown("""
+<style>
+[data-testid="stExpander"] details summary {
+    background-color: #DAA520 !important;
+    color: white !important;
+    border-radius: 5px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Score table expander
 with st.expander("현재 점수 배점표 확인"):
     st.markdown("""
@@ -96,9 +107,8 @@ with st.expander("현재 점수 배점표 확인"):
     - 아이언 4 (1점)부터 시작하여 한 단계(서브 티어) 올라갈 때마다 정확히 +1점씩 선형 누적. (예: 브론즈 4 = 5점)
     """)
 
-search_query = st.text_input("🔍 회원 이름 검색", placeholder="닉네임을 입력하세요...")
+search_query = st.selectbox("🔍 회원 이름 검색", options=["전체"] + [f"{u[1]}#{u[2]}" for u in approved_users]) if approved_users else "전체"
 
-approved_users = database.get_all_approved_users()
 user_stats = database.get_user_stats()
 
 if not approved_users:
@@ -113,29 +123,31 @@ else:
             main_pos, sub_pos = "", ""
             
         full_id = f"{riot_id}#{tag_line}"
-        if search_query and search_query.lower() not in full_id.lower():
+        if search_query != "전체" and search_query != full_id:
             continue
             
         final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
+        clan_tier = calculate_clan_tier(final_score)
         
         stats = user_stats.get(user_id, {'total': 0, 'wins': 0, 'win_rate': 0})
         
         data.append({
-            'ID': user_id,
-            'Riot ID': riot_id,
-            'Tag Line': tag_line,
+            '아이디': user_id,
+            '닉네임': riot_id,
+            '태그라인': tag_line,
+            '클랜 티어': clan_tier,
             '주 포지션': main_pos,
             '부 포지션': sub_pos,
-            '총 판수': stats['total'],
-            '승률(%)': stats['win_rate'],
+            '내전 참가 판수': stats['total'],
+            '내전 승률(%)': stats['win_rate'],
             '솔로랭크': solo_tier,
             '자유랭크': flex_tier,
-            'Power Score': power_score,
-            'Manual Score': manual_score,
-            'Manual Stars': manual_stars,
-            'is_admin': is_admin,
-            'Match Bonus': match_bonus,
-            'Final Score': final_score
+            '기본 파워스코어': power_score,
+            '수기 점수': manual_score,
+            '수기 별(우승)': manual_stars,
+            '운영진 여부': is_admin,
+            '내전 보너스(MMR)': match_bonus,
+            '최종 파워스코어': final_score
         })
         
     df = pd.DataFrame(data)
@@ -150,7 +162,7 @@ else:
     
     with col1:
         st.write("#### 파워스코어 수기 수정 (티어 기반)")
-        target_id_score = st.selectbox("회원 선택 (수정)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="score_select")
+        target_id_score = st.selectbox("회원 선택 (수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="score_select")
         
         tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
         selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options)
@@ -170,7 +182,7 @@ else:
             
     with col2:
         st.write("#### 수기 별(⭐) 부여")
-        target_id_star = st.selectbox("회원 선택 (별 추가)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="star_select")
+        target_id_star = st.selectbox("회원 선택 (별 추가)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select")
         new_stars = st.number_input("수기 별 개수 (기본 0)", value=0, min_value=0, step=1)
         if st.button("별 적용", key="btn_star"):
             user_id = int(target_id_star.split(" - ")[0])
@@ -180,7 +192,7 @@ else:
             
     with col3:
         st.write("#### 강제 탈퇴")
-        target_id_kick = st.selectbox("회원 선택 (강퇴)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="kick_select")
+        target_id_kick = st.selectbox("회원 선택 (강퇴)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="kick_select")
         if st.button("강제 탈퇴", type="primary", key="btn_kick"):
             user_id = int(target_id_kick.split(" - ")[0])
             database.kick_user(user_id)
@@ -189,11 +201,11 @@ else:
 
     with col4:
         st.write("#### 🛡️ 운영진 권한 설정")
-        target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="admin_select")
+        target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="admin_select")
         
         # 기본값을 현재 권한으로 세팅하기 위해 찾기
         current_user_id = int(target_id_admin.split(" - ")[0])
-        current_admin_status = int(df[df['ID'] == current_user_id]['is_admin'].values[0])
+        current_admin_status = int(df[df['아이디'] == current_user_id]['운영진 여부'].values[0])
         
         admin_action = st.radio("권한 등급", ["일반 회원", "운영진 (관리자)"], index=current_admin_status)
         if st.button("권한 적용", key="btn_admin"):
@@ -204,11 +216,11 @@ else:
 
     st.markdown("---")
     st.write("#### 📝 포지션 정보 수정")
-    target_id_pos = st.selectbox("회원 선택 (포지션 수정)", df['ID'].astype(str) + " - " + df['Riot ID'].astype(str) + "#" + df['Tag Line'].astype(str), key="pos_select")
+    target_id_pos = st.selectbox("회원 선택 (포지션 수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="pos_select")
     
     current_user_id_pos = int(target_id_pos.split(" - ")[0])
-    current_main_pos = df[df['ID'] == current_user_id_pos]['주 포지션'].values[0]
-    current_sub_pos = df[df['ID'] == current_user_id_pos]['부 포지션'].values[0]
+    current_main_pos = df[df['아이디'] == current_user_id_pos]['주 포지션'].values[0]
+    current_sub_pos = df[df['아이디'] == current_user_id_pos]['부 포지션'].values[0]
     
     positions_list = ["탑", "정글", "미드", "원딜", "서폿", ""]
     

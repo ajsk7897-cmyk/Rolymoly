@@ -5,6 +5,7 @@ import itertools
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
+from utils.tier_fetcher import calculate_clan_tier
 
 st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide")
 
@@ -25,7 +26,8 @@ def format_user(user):
     else:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
     final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
-    return f"{riot_id}#{tag_line} ({solo_tier} / 스코어: {final_score})", user_id, final_score, riot_id
+    clan_tier = calculate_clan_tier(final_score)
+    return f"[{clan_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, riot_id
 
 user_options = [format_user(u) for u in approved_users]
 # Dictionary for easy lookup
