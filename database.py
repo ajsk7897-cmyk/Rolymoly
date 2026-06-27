@@ -407,8 +407,16 @@ def _rollback_match_bonus(players_data, winning_team):
 @st.cache_data(ttl=60)
 def get_user_stats():
     users = get_all_users()
-    matches = get_worksheet("matches").get_all_records() if get_worksheet("matches").row_count > 1 else []
-    mp_sheet = get_worksheet("match_players").get_all_records() if get_worksheet("match_players").row_count > 1 else []
+    
+    try:
+        matches = get_worksheet("matches").get_all_records()
+    except Exception:
+        matches = []
+        
+    try:
+        mp_sheet = get_worksheet("match_players").get_all_records()
+    except Exception:
+        mp_sheet = []
     
     stats = {}
     for u in users:
