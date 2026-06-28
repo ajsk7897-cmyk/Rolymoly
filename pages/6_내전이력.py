@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 import importlib
 importlib.reload(database)
+from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 
 st.set_page_config(page_title="내전 이력", page_icon="📜", layout="wide")
 
@@ -30,7 +31,8 @@ else:
             f_score = base_score + m_bonus
             
             if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                bonus_change = int(base_score * 0.05)
+                effective_tier = calculate_clan_tier(base_score)
+                bonus_change = calculate_mmr_delta(effective_tier)
                 if t_name == winning_team:
                     change_str = f"+{bonus_change}점"
                 else:
@@ -92,7 +94,8 @@ else:
                 f_score = base_score + m_bonus
                 
                 if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                    bonus_change = int(base_score * 0.05)
+                    effective_tier = calculate_clan_tier(base_score)
+                    bonus_change = calculate_mmr_delta(effective_tier)
                     if t_name == winning_team:
                         change_str = f"+{bonus_change}점"
                     else:

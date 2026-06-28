@@ -246,8 +246,13 @@ def delete_match(match_id):
                 uid = str(mp['user_id'])
                 if uid in user_dict:
                     u = user_dict[uid]
+                    import sys, os
+                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
+
                     base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-                    bonus_change = int(base_score * 0.05)
+                    effective_tier = calculate_clan_tier(base_score)
+                    bonus_change = calculate_mmr_delta(effective_tier)
                     current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
                     
                     if mp['team_name'] == winning_team:
@@ -360,7 +365,7 @@ def update_match_winner(match_id, new_winning_team):
 def _apply_match_bonus(players_data, winning_team):
     import sys, os
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from utils.tier_fetcher import calculate_mmr_delta
+    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 
     users_sheet = get_worksheet("users")
     users = get_all_users()
@@ -374,8 +379,8 @@ def _apply_match_bonus(players_data, winning_team):
             u = user_dict[uid]
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
             
-            solo_tier = u.get('solo_tier', 'Unranked')
-            bonus_change = calculate_mmr_delta(solo_tier)
+            effective_tier = calculate_clan_tier(base_score)
+            bonus_change = calculate_mmr_delta(effective_tier)
             
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
@@ -395,7 +400,7 @@ def _apply_match_bonus(players_data, winning_team):
 def _rollback_match_bonus(players_data, winning_team):
     import sys, os
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from utils.tier_fetcher import calculate_mmr_delta
+    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 
     users_sheet = get_worksheet("users")
     users = get_all_users()
@@ -409,8 +414,8 @@ def _rollback_match_bonus(players_data, winning_team):
             u = user_dict[uid]
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
             
-            solo_tier = u.get('solo_tier', 'Unranked')
-            bonus_change = calculate_mmr_delta(solo_tier)
+            effective_tier = calculate_clan_tier(base_score)
+            bonus_change = calculate_mmr_delta(effective_tier)
             
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
