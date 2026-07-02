@@ -67,7 +67,6 @@ else:
             "부 포지션": sub_pos,
             "솔로랭크": solo_tier,
             "자유랭크": flex_tier,
-            "파워스코어 증감": score_change_str,
             "최종 파워스코어": final_score
         })
         

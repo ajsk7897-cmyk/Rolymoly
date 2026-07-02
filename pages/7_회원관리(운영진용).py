@@ -172,7 +172,7 @@ else:
             '수기 점수': manual_score,
             '수기 별(우승)': manual_stars,
             '운영진 여부': is_admin,
-            '내전 보너스(MMR)': match_bonus,
+            '내전스코어 증감': match_bonus,
             '최종 파워스코어': final_score
         })
         

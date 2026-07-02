@@ -76,9 +76,13 @@ with st.form("participant_form"):
             p2 = st.selectbox(f"{role} 2", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_2")
             selected_players[role] = [p1, p2]
             
-    submit_participants = st.form_submit_button("팀 밸런스 맞추기")
+    col_submit1, col_submit2 = st.columns(2)
+    with col_submit1:
+        submit_participants_balance = st.form_submit_button("팀 밸런스 맞추기", use_container_width=True)
+    with col_submit2:
+        submit_participants_manual = st.form_submit_button("입력한 팀으로 바로 확정", use_container_width=True)
 
-if submit_participants:
+if submit_participants_balance or submit_participants_manual:
     # Check for duplicates
     all_selected = []
     for role, players in selected_players.items():
@@ -92,40 +96,45 @@ if submit_participants:
         st.session_state.match_participants = selected_players
         st.session_state.match_host = host_name
         
-        # Calculate optimal balance
-        # We need to pick 1 from each role for Team A, the other goes to Team B
-        best_diff = float('inf')
-        best_team_a = {}
-        best_team_b = {}
-        
-        # 2^5 = 32 combinations. 0 means first player, 1 means second player
-        for combo in itertools.product([0, 1], repeat=5):
-            team_a_score = 0
-            team_b_score = 0
-            temp_a = {}
-            temp_b = {}
+        if submit_participants_balance:
+            # Calculate optimal balance
+            # We need to pick 1 from each role for Team A, the other goes to Team B
+            best_diff = float('inf')
+            best_team_a = {}
+            best_team_b = {}
             
-            for i, role in enumerate(roles):
-                a_idx = combo[i]
-                b_idx = 1 - a_idx
+            # 2^5 = 32 combinations. 0 means first player, 1 means second player
+            for combo in itertools.product([0, 1], repeat=5):
+                team_a_score = 0
+                team_b_score = 0
+                temp_a = {}
+                temp_b = {}
                 
-                a_user_id = selected_players[role][a_idx]
-                b_user_id = selected_players[role][b_idx]
-                
-                temp_a[role] = a_user_id
-                temp_b[role] = b_user_id
-                
-                team_a_score += user_dict[a_user_id][2]
-                team_b_score += user_dict[b_user_id][2]
-                
-            diff = abs(team_a_score - team_b_score)
-            if diff < best_diff:
-                best_diff = diff
-                best_team_a = temp_a
-                best_team_b = temp_b
-                
-        st.session_state.team_a = best_team_a
-        st.session_state.team_b = best_team_b
+                for i, role in enumerate(roles):
+                    a_idx = combo[i]
+                    b_idx = 1 - a_idx
+                    
+                    a_user_id = selected_players[role][a_idx]
+                    b_user_id = selected_players[role][b_idx]
+                    
+                    temp_a[role] = a_user_id
+                    temp_b[role] = b_user_id
+                    
+                    team_a_score += user_dict[a_user_id][2]
+                    team_b_score += user_dict[b_user_id][2]
+                    
+                diff = abs(team_a_score - team_b_score)
+                if diff < best_diff:
+                    best_diff = diff
+                    best_team_a = temp_a
+                    best_team_b = temp_b
+                    
+            st.session_state.team_a = best_team_a
+            st.session_state.team_b = best_team_b
+        elif submit_participants_manual:
+            st.session_state.team_a = {role: selected_players[role][0] for role in roles}
+            st.session_state.team_b = {role: selected_players[role][1] for role in roles}
+            
         st.rerun()
 
 if "team_a" in st.session_state:
