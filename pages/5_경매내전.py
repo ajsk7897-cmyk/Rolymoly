@@ -11,9 +11,9 @@ st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
 st.markdown("""
 <style>
 div[data-testid="stToast"] {
-    transform: scale(2);
-    transform-origin: top right;
+    font-size: 1.1rem !important;
     background-color: #e6ffe6 !important;
+    white-space: nowrap !important;
 }
 </style>
 """, unsafe_allow_html=True)
