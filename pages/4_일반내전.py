@@ -2,6 +2,7 @@ import streamlit as st
 import sys
 import os
 import itertools
+import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
@@ -57,6 +58,18 @@ user_dict = {u[1]: u for u in user_options}
 roles = ["TOP", "JG", "MID", "AD", "SUP"]
 
 st.subheader("1. 참가자 및 진행자 선택")
+
+if os.path.exists("temp_save_normal.json"):
+    if st.button("📂 임시저장된 팀 배정 불러오기", use_container_width=True):
+        try:
+            with open("temp_save_normal.json", "r") as f:
+                data = json.load(f)
+            for k, v in data.items():
+                st.session_state[k] = v
+            st.success("임시저장 데이터를 불러왔습니다!")
+            st.rerun()
+        except:
+            st.error("임시저장 파일을 불러오는데 실패했습니다.")
 
 st.markdown("#### 진행자 지정")
 host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
@@ -175,6 +188,19 @@ if "team_a" in st.session_state:
 
     st.markdown("---")
     
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        if st.button("💾 현재 상태 임시저장", use_container_width=True):
+            data = {
+                'team_a': st.session_state.team_a,
+                'team_b': st.session_state.team_b,
+                'match_participants': st.session_state.match_participants,
+                'match_host': st.session_state.match_host
+            }
+            with open("temp_save_normal.json", "w") as f:
+                json.dump(data, f)
+            st.success("현재 팀 배정 상태가 임시저장 되었습니다!")
+    
     if "confirm_step_1" not in st.session_state:
         st.session_state.confirm_step_1 = False
         
@@ -195,6 +221,9 @@ if "team_a" in st.session_state:
                 
                 database.add_match("NORMAL", st.session_state.match_host, winning_team, players_data)
                 st.session_state.normal_saved_toast = True
+                
+                if os.path.exists("temp_save_normal.json"):
+                    os.remove("temp_save_normal.json")
                 
                 # Clear state
                 st.session_state.confirm_step_1 = False

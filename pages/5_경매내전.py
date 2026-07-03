@@ -2,6 +2,7 @@ import streamlit as st
 import sys
 import os
 import random
+import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
@@ -59,6 +60,18 @@ if "auction_started" not in st.session_state:
 if not st.session_state.auction_started:
     st.subheader("1. 경매 내전 설정")
     
+    if os.path.exists("temp_save_auction.json"):
+        if st.button("📂 임시저장된 경매내전 불러오기", use_container_width=True):
+            try:
+                with open("temp_save_auction.json", "r") as f:
+                    data = json.load(f)
+                for k, v in data.items():
+                    st.session_state[k] = v
+                st.success("임시저장 데이터를 불러왔습니다!")
+                st.rerun()
+            except:
+                st.error("임시저장 파일을 불러오는데 실패했습니다.")
+                
     st.markdown("#### 진행자 지정")
     host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
     if host_mode == "회원 선택":
@@ -227,6 +240,23 @@ else:
             st.markdown("---")
                         
     st.divider()
+    
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        if st.button("💾 현재 경매상태 임시저장", use_container_width=True):
+            data = {
+                'auction_started': st.session_state.auction_started,
+                'host_name': st.session_state.host_name,
+                'num_teams': st.session_state.num_teams,
+                'teams': st.session_state.teams,
+                'remaining_pool': st.session_state.remaining_pool,
+                'skipped_pool': st.session_state.skipped_pool,
+                'current_target': st.session_state.current_target
+            }
+            with open("temp_save_auction.json", "w") as f:
+                json.dump(data, f)
+            st.success("현재 경매 진행 상황이 임시저장 되었습니다!")
+            
     st.markdown("### 경매 종료 및 저장")
     with st.form("save_auction_form"):
         winning_team = st.selectbox("우승 팀 (이력 보관용)", ["아직 모름"] + [t['name'] for t in st.session_state.teams])
@@ -240,6 +270,10 @@ else:
             
             database.add_match("AUCTION", st.session_state.host_name, winning_team, players_data)
             st.session_state.auction_saved_toast = True
+            
+            if os.path.exists("temp_save_auction.json"):
+                os.remove("temp_save_auction.json")
+                
             # Reset state
             st.session_state.auction_started = False
             del st.session_state.host_name
