@@ -66,24 +66,25 @@ if not st.session_state.auction_started:
     else:
         host_name = st.text_input("진행자 (직접 입력)")
     
+    # Select Participants first (outside the form to allow dynamic leader selection)
+    st.markdown("#### 👤 경매 전체 참가자 선택 (팀장 포함)")
+    selected_participants = st.multiselect(
+        "이번 경매에 참가할 전체 선수들을 선택해주세요.",
+        options=[u[1] for u in user_options],
+        format_func=lambda x: user_dict[x][0]
+    )
+
     with st.form("auction_setup"):
         num_teams = st.selectbox("팀 구성 수", [4, 6])
         
-        # Select team leaders
-        st.markdown("#### 팀장 지정 (선수 중 선택)")
+        # Select team leaders from the participants
+        st.markdown("#### 팀장 지정 (선택한 참가자 중에서 선택)")
         leaders = []
         cols = st.columns(3)
         for i in range(num_teams):
             with cols[i % 3]:
-                leader = st.selectbox(f"Team {i+1} 팀장", options=[None] + [u[1] for u in user_options], format_func=lambda x: "선택안함" if x is None else user_dict[x][0], key=f"leader_{i}")
+                leader = st.selectbox(f"Team {i+1} 팀장", options=[None] + selected_participants, format_func=lambda x: "선택안함" if x is None else user_dict[x][0], key=f"leader_{i}")
                 leaders.append(leader)
-        # Select Participants (매물)
-        st.markdown("#### 👤 경매 매물(일반 참가자) 선택")
-        selected_participants = st.multiselect(
-            "이번 경매에 참가할 선수들을 모두 선택해주세요. (팀장 제외)",
-            options=[u[1] for u in user_options],
-            format_func=lambda x: user_dict[x][0]
-        )
                 
         start_btn = st.form_submit_button("경매 시작")
         
@@ -95,41 +96,36 @@ if not st.session_state.auction_started:
             elif not host_name:
                 st.error("진행자를 지정해주세요.")
             elif not selected_participants:
-                st.error("경매에 참여할 일반 참가자를 1명 이상 선택해주세요.")
+                st.error("참가자를 1명 이상 선택해주세요.")
             else:
-                overlap = set(actual_leaders).intersection(set(selected_participants))
-                if overlap:
-                    overlap_names = [user_dict[uid][0].split('#')[0] for uid in overlap]
-                    st.error(f"팀장과 일반 참가자가 중복되었습니다: {', '.join(overlap_names)}")
-                else:
-                    st.session_state.auction_started = True
-                    st.session_state.host_name = host_name
-                    st.session_state.num_teams = num_teams
+                st.session_state.auction_started = True
+                st.session_state.host_name = host_name
+                st.session_state.num_teams = num_teams
+                
+                # Init teams: list of dicts. each team has 'id', 'name', 'points', 'members'
+                st.session_state.teams = []
+                for i in range(num_teams):
+                    leader_id = leaders[i]
+                    members = []
+                    if leader_id is not None:
+                        members.append({'user_id': leader_id, 'points_spent': 0, 'role': 'Leader'})
+                        leader_info = user_dict[leader_id]
+                        leader_name = leader_info[0].split('#')[0] # use riot_id
+                    else:
+                        leader_name = f"Team {i+1}"
                     
-                    # Init teams: list of dicts. each team has 'id', 'name', 'points', 'members'
-                    st.session_state.teams = []
-                    for i in range(num_teams):
-                        leader_id = leaders[i]
-                        members = []
-                        if leader_id is not None:
-                            members.append({'user_id': leader_id, 'points_spent': 0, 'role': 'Leader'})
-                            leader_info = user_dict[leader_id]
-                            leader_name = leader_info[0].split('#')[0] # use riot_id
-                        else:
-                            leader_name = f"Team {i+1}"
-                        
-                        st.session_state.teams.append({
-                            'id': i,
-                            'name': f"{leader_name} 팀" if leader_id is not None else leader_name,
-                            'points': 1000,
-                            'members': members
-                        })
-                    
-                    # Remaining pool
-                    st.session_state.remaining_pool = selected_participants.copy()
-                    st.session_state.skipped_pool = []
-                    st.session_state.current_target = None
-                    st.rerun()
+                    st.session_state.teams.append({
+                        'id': i,
+                        'name': f"{leader_name} 팀" if leader_id is not None else leader_name,
+                        'points': 1000,
+                        'members': members
+                    })
+                
+                # Remaining pool (exclude actual leaders)
+                st.session_state.remaining_pool = [p for p in selected_participants if p not in actual_leaders]
+                st.session_state.skipped_pool = []
+                st.session_state.current_target = None
+                st.rerun()
 else:
     # --- Auction In Progress ---
     st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
