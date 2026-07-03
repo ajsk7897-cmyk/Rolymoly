@@ -175,26 +175,27 @@ else:
     with col2:
         if st.session_state.current_target:
             st.markdown("### 낙찰 입력")
-            with st.form("bid_form"):
-                win_team_idx = st.selectbox("낙찰 팀", range(st.session_state.num_teams), format_func=lambda x: st.session_state.teams[x]['name'])
-                bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
-                submit_bid = st.form_submit_button("낙찰 확정")
-                
-                if submit_bid:
-                    if len(st.session_state.teams[win_team_idx]['members']) >= 5:
-                        st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다. 다른 팀을 선택해주세요.")
-                    elif st.session_state.teams[win_team_idx]['points'] < bid_points:
-                        st.error("팀의 남은 포인트가 부족합니다.")
-                    else:
-                        st.session_state.teams[win_team_idx]['points'] -= bid_points
-                        st.session_state.teams[win_team_idx]['members'].append({
-                            'user_id': st.session_state.current_target,
-                            'points_spent': bid_points,
-                            'role': 'Member'
-                        })
-                        st.session_state.remaining_pool.remove(st.session_state.current_target)
-                        st.session_state.current_target = None
-                        st.rerun()
+            bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
+            st.markdown("**낙찰 팀 (클릭 시 즉시 배정)**")
+            
+            cols_team = st.columns(st.session_state.num_teams)
+            for t_idx, team in enumerate(st.session_state.teams):
+                with cols_team[t_idx]:
+                    if st.button(f"{team['name']}", key=f"bid_team_{t_idx}", use_container_width=True):
+                        if len(team['members']) >= 5:
+                            st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다.")
+                        elif team['points'] < bid_points:
+                            st.error("팀의 남은 포인트가 부족합니다.")
+                        else:
+                            st.session_state.teams[t_idx]['points'] -= bid_points
+                            st.session_state.teams[t_idx]['members'].append({
+                                'user_id': st.session_state.current_target,
+                                'points_spent': bid_points,
+                                'role': 'Member'
+                            })
+                            st.session_state.remaining_pool.remove(st.session_state.current_target)
+                            st.session_state.current_target = None
+                            st.rerun()
                         
     st.divider()
     
@@ -203,27 +204,25 @@ else:
         st.markdown("### 유찰자 수동 배정")
         for idx, skip_user_id in enumerate(st.session_state.skipped_pool):
             skip_user = user_dict[skip_user_id]
-            cols_skip = st.columns([3, 2, 1])
-            with cols_skip[0]:
-                st.write(f"- {skip_user[0]}")
-            with cols_skip[1]:
-                available_teams = [t for t in st.session_state.teams if len(t['members']) < 5]
-                if available_teams:
-                    assign_team_idx = st.selectbox("팀 선택", range(len(available_teams)), format_func=lambda x: available_teams[x]['name'], key=f"skip_sel_{idx}", label_visibility="collapsed")
-                else:
-                    st.write("배정 가능 팀 없음")
-            with cols_skip[2]:
-                if available_teams:
-                    if st.button("배정", key=f"skip_btn_{idx}"):
-                        target_team = available_teams[assign_team_idx]
-                        real_idx = st.session_state.teams.index(target_team)
-                        st.session_state.teams[real_idx]['members'].append({
-                            'user_id': skip_user_id,
-                            'points_spent': 0, # 유찰자 수동 배정이므로 0포인트
-                            'role': 'Member'
-                        })
-                        st.session_state.skipped_pool.remove(skip_user_id)
-                        st.rerun()
+            st.markdown(f"**- {skip_user[0]}**")
+            
+            available_teams = [t for t in st.session_state.teams if len(t['members']) < 5]
+            if not available_teams:
+                st.warning("배정 가능한 팀이 없습니다.")
+            else:
+                cols_skip = st.columns(len(available_teams))
+                for t_idx, target_team in enumerate(available_teams):
+                    with cols_skip[t_idx]:
+                        if st.button(f"{target_team['name']}", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
+                            real_idx = st.session_state.teams.index(target_team)
+                            st.session_state.teams[real_idx]['members'].append({
+                                'user_id': skip_user_id,
+                                'points_spent': 0,
+                                'role': 'Member'
+                            })
+                            st.session_state.skipped_pool.remove(skip_user_id)
+                            st.rerun()
+            st.markdown("---")
                         
     st.divider()
     st.markdown("### 경매 종료 및 저장")
