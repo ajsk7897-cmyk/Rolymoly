@@ -35,7 +35,7 @@ if not approved_users or len(approved_users) < 10:
     st.warning("승인된 회원이 부족하여 경매 내전을 진행할 수 없습니다.")
     st.stop()
 
-from utils.tier_fetcher import calculate_clan_tier
+from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 
 # Helpers
 def format_user(user):
@@ -46,7 +46,8 @@ def format_user(user):
         main_pos, sub_pos = "", ""
     final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
     clan_tier = calculate_clan_tier(final_score)
-    return f"[{clan_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, clan_tier, main_pos, sub_pos
+    abbr_tier = abbreviate_tier(clan_tier)
+    return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos
 
 user_options = [format_user(u) for u in approved_users]
 user_dict = {u[1]: u for u in user_options}
