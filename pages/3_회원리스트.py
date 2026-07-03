@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
-from utils.tier_fetcher import calculate_clan_tier
+from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 
 st.set_page_config(page_title="회원 리스트", page_icon="👥", layout="wide")
 
@@ -65,8 +65,8 @@ else:
             "롤 아이디": full_id,
             "주 포지션": main_pos,
             "부 포지션": sub_pos,
-            "솔로랭크": solo_tier,
-            "자유랭크": flex_tier,
+            "솔로랭크": abbreviate_tier(solo_tier),
+            "자유랭크": abbreviate_tier(flex_tier),
             "최종 파워스코어": final_score
         })
         

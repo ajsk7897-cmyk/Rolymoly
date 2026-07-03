@@ -198,6 +198,34 @@ def fetch_tier_data(riot_id, tag_line):
     
     return solo_tier, flex_tier, power_score
 
+def abbreviate_tier(tier_str):
+    if not tier_str or tier_str == "Unranked":
+        return "UR"
+    
+    mapping = {
+        "Iron": "I",
+        "Bronze": "B",
+        "Silver": "S",
+        "Gold": "G",
+        "Platinum": "P",
+        "Emerald": "E",
+        "Diamond": "D",
+        "Master": "M",
+        "Grandmaster": "GM",
+        "Challenger": "CH"
+    }
+    
+    for full, short in mapping.items():
+        if tier_str.startswith(full):
+            rest = tier_str[len(full):].strip()
+            if rest:
+                if "LP" in rest:
+                    return f"{short} {rest}"
+                else:
+                    return f"{short}{rest}"
+            return short
+    return tier_str
+
 # For testing
 if __name__ == "__main__":
     print(fetch_tier_data("Hide on bush", "KR1"))

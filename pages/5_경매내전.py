@@ -134,11 +134,16 @@ else:
     cols = st.columns(st.session_state.num_teams)
     for i, team in enumerate(st.session_state.teams):
         with cols[i]:
-            st.markdown(f"### {team['name']}")
-            st.markdown(f"**남은 포인트: {team['points']}**")
-            for m in team['members']:
-                name = user_dict[m['user_id']][0]
-                st.write(f"- {name} ({m['points_spent']}p)")
+            with st.container(border=True):
+                st.markdown(f"### {team['name']}")
+                st.markdown(f"**남은 포인트: {team['points']}**")
+                st.divider()
+                for m in team['members']:
+                    name = user_dict[m['user_id']][0]
+                    if m['role'] == 'Leader':
+                        st.markdown(f"👑 <span style='font-size: 70%; font-weight: bold;'>{name}</span>", unsafe_allow_html=True)
+                    else:
+                        st.write(f"- {name} ({m['points_spent']}p)")
                 
     st.divider()
     
@@ -172,7 +177,7 @@ else:
         if st.session_state.current_target:
             st.markdown("### 낙찰 입력")
             bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
-            st.markdown("**낙찰 팀 (클릭 시 즉시 배정)**")
+            st.markdown("<span style='font-size: 70%; font-weight: bold;'>낙찰 팀 (클릭 시 즉시 배정)</span>", unsafe_allow_html=True)
             
             cols_team = st.columns(st.session_state.num_teams)
             for t_idx, team in enumerate(st.session_state.teams):
@@ -200,7 +205,7 @@ else:
         st.markdown("### 유찰자 수동 배정")
         for idx, skip_user_id in enumerate(st.session_state.skipped_pool):
             skip_user = user_dict[skip_user_id]
-            st.markdown(f"**- {skip_user[0]}**")
+            st.markdown(f"<span style='font-size: 70%; font-weight: bold;'>- {skip_user[0]}</span>", unsafe_allow_html=True)
             
             available_teams = [t for t in st.session_state.teams if len(t['members']) < 5]
             if not available_teams:

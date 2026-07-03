@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
-from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier
+from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier, abbreviate_tier
 
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
 
@@ -166,8 +166,8 @@ else:
             '부 포지션': sub_pos,
             '내전 참가 판수': stats['total'],
             '내전 승률(%)': stats['win_rate'],
-            '솔로랭크': solo_tier,
-            '자유랭크': flex_tier,
+            '솔로랭크': abbreviate_tier(solo_tier),
+            '자유랭크': abbreviate_tier(flex_tier),
             '기본 파워스코어': power_score,
             '수기 점수': manual_score,
             '수기 별(우승)': manual_stars,
