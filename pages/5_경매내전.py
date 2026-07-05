@@ -216,10 +216,12 @@ else:
     
     # Skipped Pool Manual Allocation
     if st.session_state.skipped_pool:
-        st.markdown("### 유찰자 수동 배정")
+        st.markdown("### 유찰자 수동 배정 (재경매)")
         for idx, skip_user_id in enumerate(st.session_state.skipped_pool):
             skip_user = user_dict[skip_user_id]
             st.markdown(f"<span style='font-size: 70%; font-weight: bold;'>- {skip_user[0]}</span>", unsafe_allow_html=True)
+            
+            bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10, key=f"skip_bid_{idx}")
             
             available_teams = [t for t in st.session_state.teams if len(t['members']) < 5]
             if not available_teams:
@@ -230,13 +232,17 @@ else:
                     with cols_skip[t_idx]:
                         if st.button(f"{target_team['name']}", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
                             real_idx = st.session_state.teams.index(target_team)
-                            st.session_state.teams[real_idx]['members'].append({
-                                'user_id': skip_user_id,
-                                'points_spent': 0,
-                                'role': 'Member'
-                            })
-                            st.session_state.skipped_pool.remove(skip_user_id)
-                            st.rerun()
+                            if st.session_state.teams[real_idx]['points'] < bid_points:
+                                st.error("팀의 남은 포인트가 부족합니다.")
+                            else:
+                                st.session_state.teams[real_idx]['points'] -= bid_points
+                                st.session_state.teams[real_idx]['members'].append({
+                                    'user_id': skip_user_id,
+                                    'points_spent': bid_points,
+                                    'role': 'Member'
+                                })
+                                st.session_state.skipped_pool.remove(skip_user_id)
+                                st.rerun()
             st.markdown("---")
                         
     st.divider()
