@@ -56,7 +56,7 @@ if not pending_users:
 else:
     for user in pending_users:
         user_id, riot_id, tag_line, birthdate = user
-        col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+        col1, col2, col3, col4 = st.columns([3, 2, 2, 2], vertical_alignment="bottom")
         
         col1.write(f"**{riot_id}#{tag_line}**")
         col2.write(f"생년월일: {birthdate}")
@@ -183,8 +183,8 @@ else:
         st.dataframe(df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
-    col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
+    col1, col2 = st.columns(2, vertical_alignment="bottom")
+    col3, col4 = st.columns(2, vertical_alignment="bottom")
     
     with col1:
         st.write("#### 파워스코어 수기 수정 (티어 기반)")
@@ -260,7 +260,7 @@ else:
     except ValueError:
         sub_index = 0
 
-    col_p1, col_p2 = st.columns(2)
+    col_p1, col_p2 = st.columns(2, vertical_alignment="bottom")
     with col_p1:
         new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=main_index)
     with col_p2:
@@ -302,7 +302,7 @@ if not st.session_state.delete_confirm:
         st.rerun()
 else:
     st.error("정말 삭제하시겠습니까?")
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, vertical_alignment="bottom")
     if col1.button("네, 모두 삭제합니다", type="primary"):
         database.delete_all_history()
         st.session_state.delete_confirm = False

@@ -90,11 +90,10 @@ if not st.session_state.auction_started:
     )
 
     # 팀 수 확정 버튼
-    col_t1, col_t2 = st.columns([8, 2])
+    col_t1, col_t2 = st.columns([8, 2], vertical_alignment="bottom")
     with col_t1:
         num_teams_input = st.selectbox("팀 구성 수", [4, 6])
     with col_t2:
-        st.write("") # spacing
         if st.button("팀 수 확정", use_container_width=True):
             st.session_state.num_teams_setup = num_teams_input
             
@@ -172,7 +171,7 @@ else:
     st.divider()
     
     # Auction Control
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 1], vertical_alignment="bottom")
     
     with col1:
         st.markdown("### 랜덤 뽑기")
@@ -257,7 +256,7 @@ else:
                         
     st.divider()
     
-    col_t1, col_t2 = st.columns(2)
+    col_t1, col_t2 = st.columns(2, vertical_alignment="bottom")
     with col_t1:
         if st.button("💾 현재 경매상태 임시저장", use_container_width=True):
             data = {

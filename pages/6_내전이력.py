@@ -40,7 +40,7 @@ if ongoing_sessions:
                 # Render Matches
                 st.markdown("#### ⚔️ 경기 일정 및 결과 입력")
                 for m in s["matches"]:
-                    col1, col2, col3, col4 = st.columns([3, 1, 3, 3])
+                    col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
                     with col1:
                         st.markdown(f"**{m['team1']}**")
                     with col2:
@@ -70,7 +70,7 @@ if ongoing_sessions:
                             if t1 == "미정" and t2 == "미정":
                                 st.write("이전 라운드 대기 중...")
                             else:
-                                col1, col2, col3, col4 = st.columns([3, 1, 3, 3])
+                                col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
                                 with col1:
                                     st.markdown(f"**{t1}**")
                                 with col2:
@@ -95,7 +95,7 @@ if ongoing_sessions:
             st.markdown("모든 경기가 끝나면 최종 우승팀을 선택하여 대회를 종료하고 이력을 DB에 저장하세요. **(중간 경기는 DB에 남지 않고 최종 우승팀만 반영됩니다)**")
             team_names = [t["name"] for t in s["teams"]]
             
-            c_f1, c_f2 = st.columns(2)
+            c_f1, c_f2 = st.columns(2, vertical_alignment="bottom")
             with c_f1:
                 final_winner = st.selectbox("최종 우승팀 선택", ["선택"] + team_names, key=f"final_{s['session_id']}")
             with c_f2:
@@ -153,7 +153,7 @@ else:
     if csv_data:
         df_all = pd.DataFrame(csv_data)
         csv_bytes = df_all.to_csv(index=False).encode('utf-8-sig')
-        col1, col2 = st.columns([8, 2])
+        col1, col2 = st.columns([8, 2], vertical_alignment="center")
         with col2:
             st.download_button(
                 label="📥 이력 CSV 다운로드",
@@ -210,7 +210,7 @@ else:
             team_names = list(teams.keys())
             options = ["아직 모름"] + team_names
             
-            c1, c2, c3 = st.columns([4, 2, 1])
+            c1, c2, c3 = st.columns([4, 2, 1], vertical_alignment="center")
             with c1:
                 if winning_team and winning_team != "아직 모름":
                     st.markdown(f"<h3 style='font-size: 50%;'>🏆 승리 팀: {winning_team}</h3>", unsafe_allow_html=True)

@@ -90,7 +90,7 @@ with st.form("participant_form"):
             p2 = st.selectbox(f"{role} 2", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_2")
             selected_players[role] = [p1, p2]
             
-    col_submit1, col_submit2 = st.columns(2)
+    col_submit1, col_submit2 = st.columns(2, vertical_alignment="bottom")
     with col_submit1:
         submit_participants_balance = st.form_submit_button("팀 밸런스 맞추기", use_container_width=True)
     with col_submit2:
@@ -162,7 +162,7 @@ if "team_a" in st.session_state:
     score_a = get_team_score(st.session_state.team_a)
     score_b = get_team_score(st.session_state.team_b)
     
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, vertical_alignment="bottom")
     
     with col1:
         st.markdown(f"### 🔵 Team A (총점: {score_a}점)")
@@ -188,7 +188,7 @@ if "team_a" in st.session_state:
 
     st.markdown("---")
     
-    col_t1, col_t2 = st.columns(2)
+    col_t1, col_t2 = st.columns(2, vertical_alignment="bottom")
     with col_t1:
         if st.button("💾 현재 상태 임시저장", use_container_width=True):
             data = {
@@ -211,7 +211,7 @@ if "team_a" in st.session_state:
         
     if st.session_state.confirm_step_1:
         st.warning("⚠️ 전적을 최종 확정하시겠습니까? (이 작업은 되돌릴 수 없습니다)")
-        col_c1, col_c2 = st.columns([1, 1])
+        col_c1, col_c2 = st.columns([1, 1], vertical_alignment="bottom")
         with col_c1:
             if st.button("✅ 네, 확정합니다", type="primary", use_container_width=True):
                 players_data = []
