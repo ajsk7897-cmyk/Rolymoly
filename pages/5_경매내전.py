@@ -89,9 +89,18 @@ if not st.session_state.auction_started:
         format_func=lambda x: user_dict[x][0]
     )
 
+    # 팀 수 확정 버튼
+    col_t1, col_t2 = st.columns([8, 2])
+    with col_t1:
+        num_teams_input = st.selectbox("팀 구성 수", [4, 6])
+    with col_t2:
+        st.write("") # spacing
+        if st.button("팀 수 확정", use_container_width=True):
+            st.session_state.num_teams_setup = num_teams_input
+            
+    num_teams = st.session_state.get("num_teams_setup", 4)
+
     with st.form("auction_setup"):
-        num_teams = st.selectbox("팀 구성 수", [4, 6])
-        
         # Select team leaders from the participants
         st.markdown("#### 팀장 지정 (선택한 참가자 중에서 선택)")
         leaders = []
