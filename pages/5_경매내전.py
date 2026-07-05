@@ -160,6 +160,11 @@ else:
             with st.container(border=True):
                 st.markdown(f"<h3 style='font-size: 50%;'>{team['name']}</h3>", unsafe_allow_html=True)
                 st.markdown(f"**남은 포인트: {team['points']}**")
+                with st.expander("⚙️ 포인트 수정"):
+                    new_pts = st.number_input("포인트", value=team['points'], step=10, key=f"pts_{i}")
+                    if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
+                        st.session_state.teams[i]['points'] = new_pts
+                        st.rerun()
                 st.divider()
                 for m in team['members']:
                     name = user_dict[m['user_id']][0]
