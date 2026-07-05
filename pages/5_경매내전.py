@@ -37,6 +37,7 @@ if not approved_users or len(approved_users) < 10:
     st.stop()
 
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
+from utils.tournament_manager import create_session
 
 # Helpers
 def format_user(user):
@@ -265,8 +266,9 @@ else:
             
     st.markdown("### 경매 종료 및 저장")
     with st.form("save_auction_form"):
-        winning_team = st.selectbox("우승 팀 (이력 보관용)", ["아직 모름"] + [t['name'] for t in st.session_state.teams])
-        save_btn = st.form_submit_button("경매 확정 및 DB 저장", type="primary")
+        match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+        winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름"] + [t['name'] for t in st.session_state.teams])
+        save_btn = st.form_submit_button("대회 세션 확정", type="primary")
         
         if save_btn:
             players_data = []
@@ -274,9 +276,14 @@ else:
                 for m in team['members']:
                     players_data.append((m['user_id'], team['name'], m['role'], m['points_spent']))
             
-            database.add_match("AUCTION", st.session_state.host_name, winning_team, players_data)
-            st.session_state.auction_saved_toast = True
-            
+            if "단판승부" in match_format:
+                database.add_match("AUCTION", st.session_state.host_name, winning_team, players_data)
+                st.session_state.auction_saved_toast = True
+            else:
+                fmt = "LEAGUE" if "리그" in match_format else "TOURNAMENT"
+                create_session(st.session_state.host_name, st.session_state.teams, players_data, fmt)
+                st.session_state.auction_saved_toast = True
+                
             if os.path.exists("temp_save_auction.json"):
                 os.remove("temp_save_auction.json")
                 
