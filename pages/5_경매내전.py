@@ -150,7 +150,7 @@ else:
     for i, team in enumerate(st.session_state.teams):
         with cols[i]:
             with st.container(border=True):
-                st.markdown(f"### {team['name']}")
+                st.markdown(f"<h3 style='font-size: 50%;'>{team['name']}</h3>", unsafe_allow_html=True)
                 st.markdown(f"**남은 포인트: {team['points']}**")
                 st.divider()
                 for m in team['members']:

@@ -213,9 +213,9 @@ else:
             c1, c2, c3 = st.columns([4, 2, 1])
             with c1:
                 if winning_team and winning_team != "아직 모름":
-                    st.markdown(f"### 🏆 승리 팀: {winning_team}")
+                    st.markdown(f"<h3 style='font-size: 50%;'>🏆 승리 팀: {winning_team}</h3>", unsafe_allow_html=True)
                 else:
-                    st.markdown("### 🏆 승리 팀: 미정")
+                    st.markdown("<h3 style='font-size: 50%;'>🏆 승리 팀: 미정</h3>", unsafe_allow_html=True)
             with c2:
                 new_winner = st.selectbox("승리 팀 수정", options, index=options.index(winning_team) if winning_team in options else 0, key=f"sel_{match_id}", label_visibility="collapsed")
             with c3:
@@ -228,9 +228,9 @@ else:
                 for i, (t_name, members) in enumerate(teams.items()):
                     with cols[i]:
                         if t_name == winning_team:
-                            st.markdown(f"### 👑 {t_name} (승리)")
+                            st.markdown(f"<h3 style='font-size: 50%;'>👑 {t_name} (승리)</h3>", unsafe_allow_html=True)
                         else:
-                            st.markdown(f"### {t_name}")
+                            st.markdown(f"<h3 style='font-size: 50%;'>{t_name}</h3>", unsafe_allow_html=True)
                             
                         df = pd.DataFrame(members)
                         st.dataframe(df, use_container_width=True)
