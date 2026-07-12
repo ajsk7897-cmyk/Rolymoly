@@ -49,6 +49,16 @@ def set_background(image_filename, overlay_opacity=0.75):
     [data-testid="stHeader"] {{
         background-color: transparent !important;
     }}
+
+    /* Force all text elements to be white for readability against the background */
+    h1, h2, h3, h4, h5, h6, p, span, div, label, li, a, th, td {{
+        color: #FFFFFF !important;
+    }}
+    
+    /* Optionally ensure specific Streamlit markdown classes get colored */
+    .stMarkdown, .stText {{
+        color: #FFFFFF !important;
+    }}
     </style>
     <div class="bg-image"></div>
     """
