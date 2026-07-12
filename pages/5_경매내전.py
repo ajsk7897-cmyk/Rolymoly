@@ -299,6 +299,70 @@ else:
                         
     st.divider()
     
+    with st.expander("🛠️ 잘못 배정된 팀원 수정 (팀/포인트 변경)"):
+        # Get all assigned non-leader members
+        assigned_members = []
+        for t_idx, team in enumerate(st.session_state.teams):
+            for m_idx, m in enumerate(team['members']):
+                if m['role'] != 'Leader':
+                    assigned_members.append({
+                        'team_idx': t_idx,
+                        'member_idx': m_idx,
+                        'user_id': m['user_id'],
+                        'points_spent': m['points_spent'],
+                        'name': user_dict[m['user_id']][0]
+                    })
+        
+        if not assigned_members:
+            st.info("현재 배정된 팀원이 없습니다.")
+        else:
+            col_e1, col_e2 = st.columns(2)
+            with col_e1:
+                def format_member(m):
+                    t_name = st.session_state.teams[m['team_idx']]['name']
+                    return f"[{t_name}] {m['name']} ({m['points_spent']}p)"
+                
+                selected_m = st.selectbox("수정할 팀원 선택", assigned_members, format_func=format_member)
+                st.write(f"현재 소속: **{st.session_state.teams[selected_m['team_idx']]['name']}**")
+                
+            with col_e2:
+                team_names = [t['name'] for t in st.session_state.teams]
+                new_team_name = st.selectbox("새로 배정할 팀", team_names, index=selected_m['team_idx'])
+                new_team_idx = team_names.index(new_team_name)
+                
+                new_pts = st.number_input("새로운 소모 포인트", min_value=0, max_value=1000, value=selected_m['points_spent'], step=10, key="edit_pts")
+                
+            if st.button("배정 수정 적용", type="primary"):
+                old_t_idx = selected_m['team_idx']
+                m_idx = selected_m['member_idx']
+                old_pts = selected_m['points_spent']
+                
+                old_team = st.session_state.teams[old_t_idx]
+                new_team = st.session_state.teams[new_team_idx]
+                
+                if old_t_idx == new_team_idx:
+                    if old_team['points'] + old_pts < new_pts:
+                        st.error("팀의 남은 포인트가 부족합니다.")
+                    else:
+                        old_team['points'] += old_pts
+                        old_team['points'] -= new_pts
+                        old_team['members'][m_idx]['points_spent'] = new_pts
+                        st.success("포인트가 수정되었습니다.")
+                        st.rerun()
+                else:
+                    if len(new_team['members']) >= 5:
+                        st.error("새로운 팀은 이미 5명의 인원이 꽉 찼습니다.")
+                    elif new_team['points'] < new_pts:
+                        st.error("새로운 팀의 남은 포인트가 부족합니다.")
+                    else:
+                        old_team['points'] += old_pts
+                        member_data = old_team['members'].pop(m_idx)
+                        new_team['points'] -= new_pts
+                        member_data['points_spent'] = new_pts
+                        new_team['members'].append(member_data)
+                        st.success("팀 배정이 수정되었습니다.")
+                        st.rerun()
+    
     col_t1, col_t2 = st.columns(2, vertical_alignment="bottom")
     with col_t1:
         if st.button("💾 현재 경매상태 임시저장", use_container_width=True):
