@@ -257,12 +257,12 @@ else:
                                     st.session_state.teams[t_idx]['points'] -= bid_points
                                     st.session_state.teams[t_idx]['members'].append({
                                         'user_id': st.session_state.current_target,
-                                'points_spent': bid_points,
-                                'role': 'Member'
-                            })
-                            st.session_state.remaining_pool.remove(st.session_state.current_target)
-                            st.session_state.current_target = None
-                            st.rerun()
+                                        'points_spent': bid_points,
+                                        'role': 'Member'
+                                    })
+                                    st.session_state.remaining_pool.remove(st.session_state.current_target)
+                                    st.session_state.current_target = None
+                                    st.rerun()
                         
     st.divider()
     
