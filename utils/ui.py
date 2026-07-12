@@ -22,6 +22,11 @@ def set_background(image_filename, overlay_opacity=0.75):
 
     html_str = f"""
     <style>
+    /* Force body to be dark so that image opacity creates a dark overlay effect */
+    body, html {{
+        background-color: #0E1117 !important;
+    }}
+    
     .bg-image {{
         position: fixed;
         top: 0;
@@ -31,15 +36,18 @@ def set_background(image_filename, overlay_opacity=0.75):
         background-image: url("data:{mime_type};base64,{encoded_image}");
         background-size: cover;
         background-position: center;
-        z-index: -999;
+        z-index: -10;
         opacity: {1.0 - overlay_opacity};
+        pointer-events: none;
     }}
-    /* Make Streamlit's main app container transparent so the background shows through */
-    .stApp {{
-        background-color: rgba(0,0,0,0) !important;
+    
+    /* Make Streamlit's main app containers transparent so the background shows through */
+    .stApp, [data-testid="stAppViewContainer"], .main {{
+        background-color: transparent !important;
     }}
+    
     [data-testid="stHeader"] {{
-        background-color: rgba(0,0,0,0) !important;
+        background-color: transparent !important;
     }}
     </style>
     <div class="bg-image"></div>
