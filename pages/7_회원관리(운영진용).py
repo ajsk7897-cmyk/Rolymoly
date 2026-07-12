@@ -110,6 +110,12 @@ st.markdown("""
     color: white !important;
     border-radius: 5px;
 }
+[data-testid="stExpander"] details div {
+    color: black !important;
+}
+[data-testid="stExpander"] details p, [data-testid="stExpander"] details span, [data-testid="stExpander"] details li {
+    color: black !important;
+}
 </style>
 """, unsafe_allow_html=True)
 

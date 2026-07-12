@@ -70,10 +70,6 @@ def set_background(image_filename, overlay_opacity=0.75):
         color: #000000 !important;
     }}
     
-    /* Exceptions: Force expanders (세부텍스트) to black */
-    details, details * {{
-        color: #000000 !important;
-    }}
     </style>
     <div class="bg-image"></div>
     """
