@@ -73,8 +73,9 @@ def format_user(user):
     else:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
         main_pos, sub_pos = "", ""
-    final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
-    clan_tier = calculate_clan_tier(final_score)
+    base_score = manual_score if manual_score != -1 else power_score
+    final_score = base_score + match_bonus
+    clan_tier = calculate_clan_tier(base_score, final_score)
     abbr_tier = abbreviate_tier(clan_tier)
     return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos
 

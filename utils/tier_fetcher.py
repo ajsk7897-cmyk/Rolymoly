@@ -104,13 +104,43 @@ def calculate_mmr_delta(solo_tier_str):
     delta = diff // 5
     return max(1, delta)
 
-def calculate_clan_tier(final_score):
-    # Reverse mapping
+def calculate_clan_tier(base_score, final_score=None):
+    if final_score is None:
+        final_score = base_score
+        
     sorted_tiers = sorted(TIER_SCORE_MAP.items(), key=lambda x: x[1], reverse=True)
-    for tier, score in sorted_tiers:
-        if final_score >= score:
-            return tier
-    return "Iron 4"
+    
+    # Calculate base tier (strict mapping)
+    base_tier_idx = len(sorted_tiers) - 1
+    for i, (tier, score) in enumerate(sorted_tiers):
+        if base_score >= score:
+            base_tier_idx = i
+            break
+            
+    base_tier_score = sorted_tiers[base_tier_idx][1]
+    
+    if final_score >= base_tier_score:
+        # Moving UP or staying: use strict mapping
+        for tier, score in sorted_tiers:
+            if final_score >= score:
+                return tier
+        return "Iron 4"
+    else:
+        # Moving DOWN: hysteresis (drop only if reaching the NEXT lower tier's base score)
+        for i in range(base_tier_idx, len(sorted_tiers)):
+            curr_tier = sorted_tiers[i][0]
+            curr_score = sorted_tiers[i][1]
+            
+            # The lower bound is the base score of the next tier down
+            if i + 1 < len(sorted_tiers):
+                next_score = sorted_tiers[i+1][1]
+            else:
+                next_score = -float('inf')
+                
+            if next_score < final_score <= curr_score:
+                return curr_tier
+                
+        return "Iron 4"
 
 def fetch_tier_data(riot_id, tag_line):
     """

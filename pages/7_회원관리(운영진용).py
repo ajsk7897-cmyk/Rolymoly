@@ -160,8 +160,9 @@ else:
         if search_query != "전체" and search_query != full_id:
             continue
             
-        final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
-        clan_tier = calculate_clan_tier(final_score)
+        base_score = manual_score if manual_score != -1 else power_score
+        final_score = base_score + match_bonus
+        clan_tier = calculate_clan_tier(base_score, final_score)
         
         stats = user_stats.get(user_id, {'total': 0, 'wins': 0, 'win_rate': 0})
         

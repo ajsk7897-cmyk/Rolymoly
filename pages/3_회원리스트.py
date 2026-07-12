@@ -42,7 +42,8 @@ else:
             continue
         
         # Calculate final score
-        final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
+        base_score = manual_score if manual_score != -1 else power_score
+        final_score = base_score + match_bonus
         
         # Calculate points and symbols
         total_points = auction_points.get(user_id, 0) + manual_stars
@@ -67,7 +68,7 @@ else:
         else:
             score_change_str = "0점"
         
-        clan_tier = calculate_clan_tier(final_score)
+        clan_tier = calculate_clan_tier(base_score, final_score)
         
         data.append({
             "클랜 티어": clan_tier,
