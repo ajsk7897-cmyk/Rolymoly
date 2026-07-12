@@ -9,7 +9,8 @@ import database
 
 from utils.ui import set_background
 st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
-set_background("images (3).jpg")
+if not st.session_state.get("auction_started", False):
+    set_background("images (3).jpg")
 
 st.markdown("""
 <style>
