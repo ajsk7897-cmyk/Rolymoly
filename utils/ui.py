@@ -50,14 +50,19 @@ def set_background(image_filename, overlay_opacity=0.75):
         background-color: transparent !important;
     }}
 
-    /* Force all text elements to be white for readability against the background */
-    h1, h2, h3, h4, h5, h6, p, span, div, label, li, a, th, td {{
+    /* Target specific text elements in the main container only */
+    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main p, .main li, .main th, .main td, .main label, .main .stMarkdown {{
         color: #FFFFFF !important;
     }}
     
-    /* Optionally ensure specific Streamlit markdown classes get colored */
-    .stMarkdown, .stText {{
-        color: #FFFFFF !important;
+    /* Revert sidebar navigation tabs to black */
+    [data-testid="stSidebarNav"] a, [data-testid="stSidebarNav"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
+        color: #000000 !important;
+    }}
+    
+    /* Revert button text and inputs to black */
+    button, button *, input, textarea, select {{
+        color: #000000 !important;
     }}
     </style>
     <div class="bg-image"></div>
