@@ -7,7 +7,9 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 
+from utils.ui import set_background
 st.set_page_config(page_title="일반회원 가입", page_icon="📝")
+set_background("Portfolio_img_10220755_1.gif")
 
 st.title("📝 일반회원 가입")
 

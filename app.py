@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.ui import set_background
 
 st.set_page_config(
     page_title="롤 클랜 관리 및 내전 시스템",
@@ -6,6 +7,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+set_background("190aa82672754bd77.gif")
 
 st.title("⚔️ 롤 클랜 관리 및 내전 시스템 (V2 업데이트 됨)")
 

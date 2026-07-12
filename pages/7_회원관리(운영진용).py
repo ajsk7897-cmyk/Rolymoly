@@ -7,7 +7,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier, abbreviate_tier
 
+from utils.ui import set_background
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
+set_background("190aa82672754bd77.gif")
 
 st.title("👑 회원 관리 (관리자 전용)")
 

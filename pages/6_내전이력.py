@@ -11,7 +11,9 @@ importlib.reload(database)
 from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 from utils.tournament_manager import get_ongoing_sessions, update_league_match, update_tournament_match, complete_session, update_group_match, update_group_winners, update_final_match
 
+from utils.ui import set_background
 st.set_page_config(page_title="내전 이력", page_icon="📜", layout="wide")
+set_background("images.jpg")
 
 st.markdown("""
 <style>
