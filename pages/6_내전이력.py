@@ -334,15 +334,19 @@ else:
                     st.rerun()
 
             if len(teams) > 0:
-                cols = st.columns(len(teams))
-                for i, (t_name, members) in enumerate(teams.items()):
-                    with cols[i]:
-                        if t_name == winning_team:
-                            st.markdown(f"<div style='font-size: 16px; font-weight: bold; white-space: nowrap;'>👑 {t_name} (승리)</div>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div style='font-size: 16px; font-weight: bold; white-space: nowrap;'>{t_name}</div>", unsafe_allow_html=True)
-                            
-                        df = pd.DataFrame(members)
-                        st.dataframe(df, use_container_width=True)
+                team_items = list(teams.items())
+                for row_start in range(0, len(team_items), 2):
+                    cols = st.columns(2)
+                    for col_idx in range(2):
+                        if row_start + col_idx < len(team_items):
+                            t_name, members = team_items[row_start + col_idx]
+                            with cols[col_idx]:
+                                if t_name == winning_team:
+                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; white-space: nowrap;'>👑 {t_name} (승리)</div>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; white-space: nowrap;'>{t_name}</div>", unsafe_allow_html=True)
+                                    
+                                df = pd.DataFrame(members)
+                                st.dataframe(df, use_container_width=True)
             else:
                 st.warning("이 내전에 등록된 참가자 정보가 없습니다.")

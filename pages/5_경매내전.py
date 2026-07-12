@@ -182,25 +182,29 @@ else:
     # --- Auction In Progress ---
     st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
     
-    # Render Teams
-    cols = st.columns(st.session_state.num_teams)
-    for i, team in enumerate(st.session_state.teams):
-        with cols[i]:
-            with st.container(border=True):
-                st.markdown(f"<h3 style='font-size: 50%;'>{team['name']}</h3>", unsafe_allow_html=True)
-                st.markdown(f"**남은 포인트: {team['points']}**")
-                with st.expander("⚙️ 포인트 수정"):
-                    new_pts = st.number_input("포인트", value=team['points'], step=10, key=f"pts_{i}")
-                    if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
-                        st.session_state.teams[i]['points'] = new_pts
-                        st.rerun()
-                st.divider()
-                for m in team['members']:
-                    name = user_dict[m['user_id']][0]
-                    if m['role'] == 'Leader':
-                        st.markdown(f"👑 <span style='font-size: 70%; font-weight: bold;'>{name}</span>", unsafe_allow_html=True)
-                    else:
-                        st.write(f"- {name} ({m['points_spent']}p)")
+    # Render Teams (Max 2 per row)
+    for row_start in range(0, st.session_state.num_teams, 2):
+        cols = st.columns(2)
+        for col_idx in range(2):
+            if row_start + col_idx < st.session_state.num_teams:
+                team = st.session_state.teams[row_start + col_idx]
+                i = row_start + col_idx
+                with cols[col_idx]:
+                    with st.container(border=True):
+                        st.markdown(f"<h3 style='font-size: 50%;'>{team['name']}</h3>", unsafe_allow_html=True)
+                        st.markdown(f"**남은 포인트: {team['points']}**")
+                        with st.expander("⚙️ 포인트 수정"):
+                            new_pts = st.number_input("포인트", value=team['points'], step=10, key=f"pts_{i}")
+                            if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
+                                st.session_state.teams[i]['points'] = new_pts
+                                st.rerun()
+                        st.divider()
+                        for m in team['members']:
+                            name = user_dict[m['user_id']][0]
+                            if m['role'] == 'Leader':
+                                st.markdown(f"👑 <span style='font-size: 70%; font-weight: bold;'>{name}</span>", unsafe_allow_html=True)
+                            else:
+                                st.write(f"- {name} ({m['points_spent']}p)")
                 
     st.divider()
     
@@ -236,18 +240,22 @@ else:
             bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
             st.markdown("<span style='font-size: 70%; font-weight: bold;'>낙찰 팀 (클릭 시 즉시 배정)</span>", unsafe_allow_html=True)
             
-            cols_team = st.columns(st.session_state.num_teams)
-            for t_idx, team in enumerate(st.session_state.teams):
-                with cols_team[t_idx]:
-                    if st.button(f"{team['name']}", key=f"bid_team_{t_idx}", use_container_width=True):
-                        if len(team['members']) >= 5:
-                            st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다.")
-                        elif team['points'] < bid_points:
-                            st.error("팀의 남은 포인트가 부족합니다.")
-                        else:
-                            st.session_state.teams[t_idx]['points'] -= bid_points
-                            st.session_state.teams[t_idx]['members'].append({
-                                'user_id': st.session_state.current_target,
+            for row_start in range(0, st.session_state.num_teams, 2):
+                cols_team = st.columns(2)
+                for col_idx in range(2):
+                    if row_start + col_idx < st.session_state.num_teams:
+                        t_idx = row_start + col_idx
+                        team = st.session_state.teams[t_idx]
+                        with cols_team[col_idx]:
+                            if st.button(f"{team['name']}", key=f"bid_team_{t_idx}", use_container_width=True):
+                                if len(team['members']) >= 5:
+                                    st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다.")
+                                elif team['points'] < bid_points:
+                                    st.error("팀의 남은 포인트가 부족합니다.")
+                                else:
+                                    st.session_state.teams[t_idx]['points'] -= bid_points
+                                    st.session_state.teams[t_idx]['members'].append({
+                                        'user_id': st.session_state.current_target,
                                 'points_spent': bid_points,
                                 'role': 'Member'
                             })
