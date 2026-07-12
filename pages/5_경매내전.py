@@ -183,6 +183,17 @@ else:
     # --- Auction In Progress ---
     st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
     
+    # Inject CSS for semi-transparent black background for team containers
+    st.markdown("""
+    <style>
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: rgba(0, 0, 0, 0.6) !important;
+        border-radius: 10px;
+        padding: 5px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Render Teams (Max 2 per row)
     for row_start in range(0, st.session_state.num_teams, 2):
         cols = st.columns(2)
