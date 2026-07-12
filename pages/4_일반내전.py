@@ -10,7 +10,7 @@ from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 
 from utils.ui import set_background
 st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide")
-set_background("images (2).jpg')
+set_background("images (2).jpg")
 
 st.markdown("""
 <style>
