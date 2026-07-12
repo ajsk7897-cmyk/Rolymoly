@@ -122,6 +122,8 @@ st.markdown("""
 # Score table expander
 with st.expander("현재 점수 배점표 확인"):
     st.markdown("""
+    <div style="background-color: rgba(255, 255, 255, 0.85); padding: 15px; border-radius: 10px; color: #111;">
+    
     **[ 솔로랭크 스코어 배점표 및 MMR 증감폭 ]**
     - 마스터: 550점 (100LP 이상: 600점, 200LP 이상: 700점) `(내전 결과 반영 +- 50점 / 100LP: +- 20점 / 200LP: +- 20점)`
     - 그랜드마스터: 800점 `(내전 결과 반영 +- 40점)`
@@ -138,7 +140,9 @@ with st.expander("현재 점수 배점표 확인"):
 
     **[ 자유랭크 선형(Linear) 누적 점수 ]**
     - 아이언 4 (1점)부터 시작하여 한 단계(서브 티어) 올라갈 때마다 정확히 +1점씩 선형 누적. (예: 브론즈 4 = 5점)
-    """)
+    
+    </div>
+    """, unsafe_allow_html=True)
 
 approved_users = database.get_all_approved_users()
 search_query = st.selectbox("🔍 회원 이름 검색", options=["전체"] + [f"{u[1]}#{u[2]}" for u in approved_users]) if approved_users else "전체"
