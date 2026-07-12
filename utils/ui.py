@@ -50,18 +50,28 @@ def set_background(image_filename, overlay_opacity=0.75):
         background-color: transparent !important;
     }}
 
-    /* Target specific text elements in the main container only */
-    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6, .main p, .main li, .main th, .main td, .main label, .main .stMarkdown {{
+    /* Force global text to white for readability */
+    h1, h2, h3, h4, h5, h6, p, span, label, li, a, th, td {{
         color: #FFFFFF !important;
     }}
     
-    /* Revert sidebar navigation tabs to black */
-    [data-testid="stSidebarNav"] a, [data-testid="stSidebarNav"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
+    /* Exceptions: Force sidebar text to black */
+    [data-testid="stSidebar"], [data-testid="stSidebar"] * {{
         color: #000000 !important;
     }}
     
-    /* Revert button text and inputs to black */
-    button, button *, input, textarea, select {{
+    /* Exceptions: Force buttons to black (e.g., 로그인, 비밀번호 변경, 티어 최신화) */
+    button, button * {{
+        color: #000000 !important;
+    }}
+    
+    /* Exceptions: Force inputs to black */
+    input, textarea, select, [data-baseweb="input"] * {{
+        color: #000000 !important;
+    }}
+    
+    /* Exceptions: Force expanders (세부텍스트) to black */
+    details, details * {{
         color: #000000 !important;
     }}
     </style>
