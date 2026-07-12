@@ -188,11 +188,18 @@ else:
     <style>
     [data-testid="stVerticalBlockBorderWrapper"] {
         background-color: rgba(255, 255, 255, 0.85) !important;
-        border-radius: 12px;
-        padding: 5px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        border-radius: 12px !important;
+        padding: 5px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
     }
-    [data-testid="stVerticalBlockBorderWrapper"] * {
+    [data-testid="stVerticalBlockBorderWrapper"] h1,
+    [data-testid="stVerticalBlockBorderWrapper"] h2,
+    [data-testid="stVerticalBlockBorderWrapper"] h3,
+    [data-testid="stVerticalBlockBorderWrapper"] p,
+    [data-testid="stVerticalBlockBorderWrapper"] span,
+    [data-testid="stVerticalBlockBorderWrapper"] div,
+    [data-testid="stVerticalBlockBorderWrapper"] label,
+    [data-testid="stVerticalBlockBorderWrapper"] li {
         color: #000000 !important;
     }
     </style>
