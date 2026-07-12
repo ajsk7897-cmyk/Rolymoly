@@ -40,6 +40,31 @@ from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 from utils.tournament_manager import create_session
 
 # Helpers
+def get_auction_points(tier_score):
+    if tier_score >= 700: return 690
+    elif tier_score >= 600: return 790
+    elif tier_score >= 550: return 840
+    elif tier_score >= 480: return 910
+    elif tier_score >= 450: return 940
+    elif tier_score >= 420: return 970
+    elif tier_score >= 390: return 1000
+    elif tier_score >= 340: return 1050
+    elif tier_score >= 320: return 1070
+    elif tier_score >= 300: return 1090
+    elif tier_score >= 280: return 1110
+    elif tier_score >= 230: return 1160
+    elif tier_score >= 220: return 1170
+    elif tier_score >= 210: return 1180
+    elif tier_score >= 200: return 1190
+    elif tier_score >= 150: return 1240
+    elif tier_score >= 140: return 1250
+    elif tier_score >= 130: return 1260
+    elif tier_score >= 120: return 1270
+    elif tier_score >= 90: return 1300
+    elif tier_score >= 80: return 1310
+    elif tier_score >= 70: return 1320
+    else: return 1330
+
 def format_user(user):
     if len(user) == 12:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
@@ -130,17 +155,19 @@ if not st.session_state.auction_started:
                 for i in range(num_teams):
                     leader_id = leaders[i]
                     members = []
+                    team_points = 1000
                     if leader_id is not None:
                         members.append({'user_id': leader_id, 'points_spent': 0, 'role': 'Leader'})
                         leader_info = user_dict[leader_id]
                         leader_name = leader_info[0].split('#')[0] # use riot_id
+                        team_points = get_auction_points(leader_info[2])
                     else:
                         leader_name = f"Team {i+1}"
                     
                     st.session_state.teams.append({
                         'id': i,
                         'name': f"{leader_name} 팀" if leader_id is not None else leader_name,
-                        'points': 1000,
+                        'points': team_points,
                         'members': members
                     })
                 
