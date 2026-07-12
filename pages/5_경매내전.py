@@ -183,14 +183,17 @@ else:
     # --- Auction In Progress ---
     st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
     
-    # Inject CSS for semi-transparent dark slate background for team containers
+    # Inject CSS for semi-transparent white background and black text for team containers
     st.markdown("""
     <style>
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: rgba(15, 23, 42, 0.85) !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
         border-radius: 12px;
         padding: 5px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] * {
+        color: #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
