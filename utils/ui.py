@@ -19,19 +19,29 @@ def set_background(image_filename, overlay_opacity=0.75):
         
     with open(image_path, "rb") as f:
         encoded_image = base64.b64encode(f.read()).decode()
-        
-    css = f"""
+
+    html_str = f"""
     <style>
-    .stApp, [data-testid="stAppViewContainer"], .main {{
-        background-image: linear-gradient(rgba(14, 17, 23, {overlay_opacity}), rgba(14, 17, 23, {overlay_opacity})), url("data:{mime_type};base64,{encoded_image}") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-        background-repeat: no-repeat !important;
+    .bg-image {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: url("data:{mime_type};base64,{encoded_image}");
+        background-size: cover;
+        background-position: center;
+        z-index: -999;
+        opacity: {1.0 - overlay_opacity};
+    }}
+    /* Make Streamlit's main app container transparent so the background shows through */
+    .stApp {{
+        background-color: rgba(0,0,0,0) !important;
     }}
     [data-testid="stHeader"] {{
-        background: rgba(0,0,0,0) !important;
+        background-color: rgba(0,0,0,0) !important;
     }}
     </style>
+    <div class="bg-image"></div>
     """
-    st.markdown(css, unsafe_allow_html=True)
+    st.markdown(html_str, unsafe_allow_html=True)
