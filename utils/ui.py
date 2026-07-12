@@ -22,14 +22,15 @@ def set_background(image_filename, overlay_opacity=0.75):
         
     css = f"""
     <style>
-    [data-testid="stAppViewContainer"] > .main {{
-        background-image: linear-gradient(rgba(14, 17, 23, {overlay_opacity}), rgba(14, 17, 23, {overlay_opacity})), url("data:{mime_type};base64,{encoded_image}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+    .stApp, [data-testid="stAppViewContainer"], .main {{
+        background-image: linear-gradient(rgba(14, 17, 23, {overlay_opacity}), rgba(14, 17, 23, {overlay_opacity})), url("data:{mime_type};base64,{encoded_image}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+        background-repeat: no-repeat !important;
     }}
     [data-testid="stHeader"] {{
-        background: rgba(0,0,0,0);
+        background: rgba(0,0,0,0) !important;
     }}
     </style>
     """
