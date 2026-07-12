@@ -62,7 +62,7 @@ if ongoing_sessions:
                 # Render Matches
                 st.markdown("#### ⚔️ 경기 일정 및 결과 입력")
                 for m in s["matches"]:
-                    col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                    col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
                     with col1:
                         st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
                     with col2:
@@ -105,7 +105,7 @@ if ongoing_sessions:
                     st.markdown("**A조 경기**")
                     a_matches = [m for m in s["matches"] if m["group"] == "A"]
                     for m in a_matches:
-                        col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
                         with col1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
                         with col2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
                         with col3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
@@ -121,7 +121,7 @@ if ongoing_sessions:
                     st.markdown("**B조 경기**")
                     b_matches = [m for m in s["matches"] if m["group"] == "B"]
                     for m in b_matches:
-                        col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
                         with col1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
                         with col2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
                         with col3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
@@ -154,7 +154,7 @@ if ongoing_sessions:
                 if a_win_val and b_win_val:
                     st.markdown("**결승전 진행**")
                     f_match = s["final_match"]
-                    col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                    col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
                     with col1: st.markdown(f"<div class='team-name-small'>{f_match['team1']}</div>", unsafe_allow_html=True)
                     with col2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
                     with col3: st.markdown(f"<div class='team-name-small'>{f_match['team2']}</div>", unsafe_allow_html=True)
@@ -180,7 +180,7 @@ if ongoing_sessions:
                             if t1 == "미정" and t2 == "미정":
                                 st.write("이전 라운드 대기 중...")
                             else:
-                                col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                                col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
                                 with col1:
                                     st.markdown(f"<div class='team-name-small'>{t1}</div>", unsafe_allow_html=True)
                                 with col2:
@@ -320,7 +320,7 @@ else:
             team_names = list(teams.keys())
             options = ["아직 모름"] + team_names
             
-            c1, c2, c3 = st.columns([4, 2, 1], vertical_alignment="center")
+            c1, c2, c3 = st.columns([3, 4, 1], vertical_alignment="center")
             with c1:
                 if winning_team and winning_team != "아직 모름":
                     st.markdown(f"<div style='font-size: 16px; font-weight: bold; white-space: nowrap;'>🏆 승리 팀: {winning_team}</div>", unsafe_allow_html=True)
