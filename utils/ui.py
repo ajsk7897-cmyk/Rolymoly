@@ -54,6 +54,11 @@ def set_background(image_filename, overlay_opacity=0.75):
         color: #000000 !important;
     }}
     
+    /* Exceptions: Force dropdown list items to black */
+    ul[role="listbox"] *, div[role="listbox"] *, li[role="option"] * {{
+        color: #000000 !important;
+    }}
+    
     </style>
     """
     st.markdown(html_str, unsafe_allow_html=True)
