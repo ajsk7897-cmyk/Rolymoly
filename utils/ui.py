@@ -31,7 +31,7 @@ def set_background(image_filename, overlay_opacity=0.75):
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
+        width: 100%;
         height: 100vh;
         background-image: url("data:{mime_type};base64,{encoded_image}");
         background-size: cover;
