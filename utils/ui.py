@@ -59,6 +59,17 @@ def set_background(image_filename, overlay_opacity=0.75):
         color: #000000 !important;
     }}
     
+    /* Exceptions: Toast notification styling */
+    [data-testid="stToast"] {{
+        white-space: nowrap !important;
+        width: max-content !important;
+        min-width: max-content !important;
+        max-width: none !important;
+    }}
+    [data-testid="stToast"] * {{
+        color: #000000 !important;
+    }}
+    
     </style>
     """
     st.markdown(html_str, unsafe_allow_html=True)
