@@ -469,20 +469,23 @@ def get_user_stats():
     return stats
 
 @st.cache_data(ttl=60)
-def get_auction_wins_by_user():
+def get_auction_points_by_user():
     matches_sheet = get_worksheet("matches")
     mp_sheet = get_worksheet("match_players")
     
     matches = matches_sheet.get_all_records()
     mps = mp_sheet.get_all_records()
     
-    wins = {}
+    points = {}
     for match in matches:
         if match['match_type'] == 'AUCTION' and match['winning_team'] not in ["", "아직 모름"]:
-            match_mps = [mp for mp in mps if str(mp['match_id']) == str(match['id']) and mp['team_name'] == match['winning_team']]
-            for mp in match_mps:
+            all_match_mps = [mp for mp in mps if str(mp['match_id']) == str(match['id'])]
+            points_to_award = 5 if len(all_match_mps) >= 30 else 1
+            
+            winning_mps = [mp for mp in all_match_mps if mp['team_name'] == match['winning_team']]
+            for mp in winning_mps:
                 uid = int(mp['user_id'])
-                wins[uid] = wins.get(uid, 0) + 1
-    return wins
+                points[uid] = points.get(uid, 0) + points_to_award
+    return points
 
 init_db()

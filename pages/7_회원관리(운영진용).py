@@ -170,7 +170,7 @@ else:
             '자유랭크': abbreviate_tier(flex_tier),
             '기본 파워스코어': power_score,
             '수기 점수': manual_score,
-            '수기 별(우승)': manual_stars,
+            '수기 기호 포인트': manual_stars,
             '운영진 여부': is_admin,
             '내전스코어 증감': match_bonus,
             '최종 파워스코어': final_score
@@ -207,13 +207,17 @@ else:
             st.rerun()
             
     with col2:
-        st.write("#### 수기 별(⭐) 부여")
-        target_id_star = st.selectbox("회원 선택 (별 추가)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select")
-        new_stars = st.number_input("수기 별 개수 (기본 0)", value=0, min_value=0, step=1)
-        if st.button("별 적용", key="btn_star"):
-            user_id = int(target_id_star.split(" - ")[0])
-            database.update_manual_stars(user_id, new_stars)
-            st.success("별이 부여되었습니다.")
+        st.write("#### 우승 기호 포인트 수기 설정")
+        st.caption("1점=⭐별, 5점=🎖️메달, 25점=🏆트로피 (예: 6점 = 🎖️1개 ⭐1개)")
+        target_id_star = st.selectbox("회원 선택 (포인트 설정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select")
+        
+        current_user_id_star = int(target_id_star.split(" - ")[0])
+        current_manual_points = int(df[df['아이디'] == current_user_id_star]['수기 기호 포인트'].values[0])
+        
+        new_stars = st.number_input("포인트 입력 (기존 수기 포인트를 덮어씁니다)", value=current_manual_points, min_value=0, step=1)
+        if st.button("포인트 적용", key="btn_star"):
+            database.update_manual_stars(current_user_id_star, new_stars)
+            st.success(f"수기 우승 포인트가 {new_stars}점으로 변경되었습니다.")
             st.rerun()
             
     with col3:

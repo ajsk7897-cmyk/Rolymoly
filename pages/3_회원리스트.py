@@ -15,7 +15,7 @@ st.markdown("클랜에 가입된 모든 회원 목록입니다. 🌟(별표)는 
 
 # Fetch data
 approved_users = database.get_all_approved_users()
-auction_wins = database.get_auction_wins_by_user()
+auction_points = database.get_auction_points_by_user()
 
 # Search functionality (Dropdown + Typing)
 user_names = [f"{u[1]}#{u[2]}" for u in approved_users] if approved_users else []
@@ -42,9 +42,18 @@ else:
         # Calculate final score
         final_score = (manual_score if manual_score != -1 else power_score) + match_bonus
         
-        # Calculate stars
-        wins = auction_wins.get(user_id, 0) + manual_stars
-        stars = "⭐" * wins if wins > 0 else "-"
+        # Calculate points and symbols
+        total_points = auction_points.get(user_id, 0) + manual_stars
+        
+        trophies = total_points // 25
+        medals = (total_points % 25) // 5
+        stars = total_points % 5
+        
+        symbol_str = ""
+        if trophies > 0: symbol_str += "🏆" * trophies
+        if medals > 0: symbol_str += "🎖️" * medals
+        if stars > 0: symbol_str += "⭐" * stars
+        if not symbol_str: symbol_str = "-"
         
         full_id = f"{riot_id}#{tag_line}"
         role_str = "👑 운영진" if is_admin == 1 else "일반"
@@ -61,7 +70,7 @@ else:
         data.append({
             "클랜 티어": clan_tier,
             "권한": role_str,
-            "🌟 우승 횟수": stars,
+            "🌟 우승 기호": symbol_str,
             "롤 아이디": full_id,
             "주 포지션": main_pos,
             "부 포지션": sub_pos,
