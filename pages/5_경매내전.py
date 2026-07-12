@@ -117,7 +117,7 @@ if not st.session_state.auction_started:
     # 팀 수 확정 버튼
     col_t1, col_t2 = st.columns([8, 2], vertical_alignment="bottom")
     with col_t1:
-        num_teams_input = st.selectbox("팀 구성 수", [4, 6])
+        num_teams_input = st.selectbox("팀 구성 수", [4, 6, 8])
     with col_t2:
         if st.button("팀 수 확정", use_container_width=True):
             st.session_state.num_teams_setup = num_teams_input
@@ -306,7 +306,11 @@ else:
             
     st.markdown("### 경매 종료 및 저장")
     with st.form("save_auction_form"):
-        match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+        if st.session_state.num_teams == 8:
+            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "조별리그 (4팀 2조, 조 1위 결승)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+        else:
+            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+            
         winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름"] + [t['name'] for t in st.session_state.teams])
         save_btn = st.form_submit_button("대회 세션 확정", type="primary")
         
@@ -320,7 +324,12 @@ else:
                 database.add_match("AUCTION", st.session_state.host_name, winning_team, players_data)
                 st.session_state.auction_saved_toast = True
             else:
-                fmt = "LEAGUE" if "리그" in match_format else "TOURNAMENT"
+                if "조별리그" in match_format:
+                    fmt = "GROUP_STAGE"
+                elif "리그" in match_format:
+                    fmt = "LEAGUE"
+                else:
+                    fmt = "TOURNAMENT"
                 create_session(st.session_state.host_name, st.session_state.teams, players_data, fmt)
                 st.session_state.auction_saved_toast = True
                 

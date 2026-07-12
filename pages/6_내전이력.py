@@ -9,7 +9,7 @@ import database
 import importlib
 importlib.reload(database)
 from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-from utils.tournament_manager import get_ongoing_sessions, update_league_match, update_tournament_match, complete_session
+from utils.tournament_manager import get_ongoing_sessions, update_league_match, update_tournament_match, complete_session, update_group_match, update_group_winners, update_final_match
 
 st.set_page_config(page_title="내전 이력", page_icon="📜", layout="wide")
 
@@ -19,7 +19,12 @@ ongoing_sessions = get_ongoing_sessions()
 if ongoing_sessions:
     st.subheader("🏁 진행 중인 경매내전 대회 (리그/토너먼트)")
     for s in ongoing_sessions:
-        fmt_str = "리그 (풀리그)" if s["format"] == "LEAGUE" else "토너먼트 (승자 진출)"
+        if s["format"] == "LEAGUE":
+            fmt_str = "리그 (풀리그)"
+        elif s["format"] == "GROUP_STAGE":
+            fmt_str = "조별리그 (4팀 2조, 조 1위 결승)"
+        else:
+            fmt_str = "토너먼트 (승자 진출)"
         s_date = datetime.fromtimestamp(int(s["session_id"])).strftime("%y년 %m월 %d일 %H:%M")
         with st.expander(f"[{fmt_str}] {s_date} - 진행자: {s['host']}", expanded=True):
             if s["format"] == "LEAGUE":
@@ -54,6 +59,94 @@ if ongoing_sessions:
                         if new_winner != current_winner:
                             actual_winner = None if new_winner == "진행 전" else new_winner
                             update_league_match(s["session_id"], m["id"], actual_winner)
+                            st.rerun()
+            elif s["format"] == "GROUP_STAGE":
+                # Render Standings
+                st.markdown("#### 🏆 조별 순위표")
+                c1, c2 = st.columns(2)
+                standings = s["standings"]
+                
+                with c1:
+                    st.markdown("**A조**")
+                    a_standings = {k: v for k, v in standings.items() if v["group"] == "A"}
+                    a_sorted = sorted(a_standings.items(), key=lambda x: x[1]["points"], reverse=True)
+                    df_a = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"]} for i, (k, v) in enumerate(a_sorted)])
+                    st.dataframe(df_a, use_container_width=True)
+                    
+                with c2:
+                    st.markdown("**B조**")
+                    b_standings = {k: v for k, v in standings.items() if v["group"] == "B"}
+                    b_sorted = sorted(b_standings.items(), key=lambda x: x[1]["points"], reverse=True)
+                    df_b = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"]} for i, (k, v) in enumerate(b_sorted)])
+                    st.dataframe(df_b, use_container_width=True)
+                    
+                # Render Matches
+                st.markdown("#### ⚔️ 조별 리그 경기 결과 입력")
+                c3, c4 = st.columns(2)
+                
+                with c3:
+                    st.markdown("**A조 경기**")
+                    a_matches = [m for m in s["matches"] if m["group"] == "A"]
+                    for m in a_matches:
+                        col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                        with col1: st.markdown(f"**{m['team1']}**")
+                        with col2: st.markdown("VS")
+                        with col3: st.markdown(f"**{m['team2']}**")
+                        with col4:
+                            winner_opts = ["진행 전", m["team1"], m["team2"]]
+                            current_winner = m["winner"] if m["winner"] else "진행 전"
+                            new_winner = st.selectbox("승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"grp_{s['session_id']}_{m['id']}", label_visibility="collapsed")
+                            if new_winner != current_winner:
+                                update_group_match(s["session_id"], m["id"], None if new_winner == "진행 전" else new_winner)
+                                st.rerun()
+                                
+                with c4:
+                    st.markdown("**B조 경기**")
+                    b_matches = [m for m in s["matches"] if m["group"] == "B"]
+                    for m in b_matches:
+                        col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                        with col1: st.markdown(f"**{m['team1']}**")
+                        with col2: st.markdown("VS")
+                        with col3: st.markdown(f"**{m['team2']}**")
+                        with col4:
+                            winner_opts = ["진행 전", m["team1"], m["team2"]]
+                            current_winner = m["winner"] if m["winner"] else "진행 전"
+                            new_winner = st.selectbox("승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"grp_{s['session_id']}_{m['id']}", label_visibility="collapsed")
+                            if new_winner != current_winner:
+                                update_group_match(s["session_id"], m["id"], None if new_winner == "진행 전" else new_winner)
+                                st.rerun()
+
+                st.markdown("#### 🥇 조 1위 확정 및 결승전")
+                c5, c6 = st.columns(2)
+                with c5:
+                    a_teams = [k for k, v in standings.items() if v["group"] == "A"]
+                    cur_a_winner = s.get("group_A_winner")
+                    new_a_winner = st.selectbox("A조 1위 수동 확정", ["선택"] + a_teams, index=0 if not cur_a_winner else a_teams.index(cur_a_winner)+1, key=f"awin_{s['session_id']}")
+                with c6:
+                    b_teams = [k for k, v in standings.items() if v["group"] == "B"]
+                    cur_b_winner = s.get("group_B_winner")
+                    new_b_winner = st.selectbox("B조 1위 수동 확정", ["선택"] + b_teams, index=0 if not cur_b_winner else b_teams.index(cur_b_winner)+1, key=f"bwin_{s['session_id']}")
+                
+                a_win_val = None if new_a_winner == "선택" else new_a_winner
+                b_win_val = None if new_b_winner == "선택" else new_b_winner
+                
+                if a_win_val != cur_a_winner or b_win_val != cur_b_winner:
+                    update_group_winners(s["session_id"], a_win_val, b_win_val)
+                    st.rerun()
+                    
+                if a_win_val and b_win_val:
+                    st.markdown("**결승전 진행**")
+                    f_match = s["final_match"]
+                    col1, col2, col3, col4 = st.columns([3, 1, 3, 3], vertical_alignment="center")
+                    with col1: st.markdown(f"**{f_match['team1']}**")
+                    with col2: st.markdown("VS")
+                    with col3: st.markdown(f"**{f_match['team2']}**")
+                    with col4:
+                        winner_opts = ["진행 전", f_match["team1"], f_match["team2"]]
+                        current_winner = f_match["winner"] if f_match["winner"] else "진행 전"
+                        new_winner = st.selectbox("결승 승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"gfin_{s['session_id']}", label_visibility="collapsed")
+                        if new_winner != current_winner:
+                            update_final_match(s["session_id"], None if new_winner == "진행 전" else new_winner)
                             st.rerun()
             else:
                 # TOURNAMENT
