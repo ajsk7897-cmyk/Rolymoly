@@ -307,9 +307,9 @@ else:
     st.markdown("### 경매 종료 및 저장")
     with st.form("save_auction_form"):
         if st.session_state.num_teams == 8:
-            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "조별리그 (4팀 2조, 조 1위 결승)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "조별리그 (4팀 2조, 조 1위 결승)", "풀리그 (모든 팀 상호 대전)", "토너먼트 (승자 진출)"])
         else:
-            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "리그 (풀리그 조별대진)", "토너먼트 (승자 진출)"])
+            match_format = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "풀리그 (모든 팀 상호 대전)", "토너먼트 (승자 진출)"])
             
         winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름"] + [t['name'] for t in st.session_state.teams])
         save_btn = st.form_submit_button("대회 세션 확정", type="primary")
@@ -326,7 +326,7 @@ else:
             else:
                 if "조별리그" in match_format:
                     fmt = "GROUP_STAGE"
-                elif "리그" in match_format:
+                elif "풀리그" in match_format:
                     fmt = "LEAGUE"
                 else:
                     fmt = "TOURNAMENT"

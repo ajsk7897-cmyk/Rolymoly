@@ -20,7 +20,7 @@ if ongoing_sessions:
     st.subheader("🏁 진행 중인 경매내전 대회 (리그/토너먼트)")
     for s in ongoing_sessions:
         if s["format"] == "LEAGUE":
-            fmt_str = "리그 (풀리그)"
+            fmt_str = "풀리그 (모든 팀 상호 대전)"
         elif s["format"] == "GROUP_STAGE":
             fmt_str = "조별리그 (4팀 2조, 조 1위 결승)"
         else:
