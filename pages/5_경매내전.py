@@ -35,6 +35,8 @@ if st.session_state.get("auction_saved_toast", False):
     st.session_state.auction_saved_toast = False
 
 approved_users = database.get_all_approved_users()
+auction_points = database.get_auction_points_by_user()
+
 if not approved_users or len(approved_users) < 10:
     st.warning("승인된 회원이 부족하여 경매 내전을 진행할 수 없습니다.")
     st.stop()
@@ -78,7 +80,7 @@ def format_user(user):
     final_score = base_score + match_bonus
     clan_tier = calculate_clan_tier(base_score, final_score)
     abbr_tier = abbreviate_tier(clan_tier)
-    return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos
+    return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos, manual_stars
 
 user_options = [format_user(u) for u in approved_users]
 user_dict = {u[1]: u for u in user_options}
@@ -249,7 +251,29 @@ else:
                 
         if st.session_state.current_target:
             t_user = user_dict[st.session_state.current_target]
-            st.info(f"### 현재 대상: {t_user[0]}\n**클랜 티어**: {t_user[3]} | **주 포지션**: {t_user[4]} | **부 포지션**: {t_user[5]}")
+            total_points = auction_points.get(t_user[1], 0) + t_user[6]
+            trophies = total_points // 25
+            medals = (total_points % 25) // 5
+            stars = total_points % 5
+            
+            symbol_str = ""
+            if trophies > 0: symbol_str += "🏆" * trophies
+            if medals > 0: symbol_str += "🎖️" * medals
+            if stars > 0: symbol_str += "⭐" * stars
+            if not symbol_str: symbol_str = "-"
+            
+            st.markdown(f"""
+            <div style="background-color: #e8f4f8; padding: 15px; border-radius: 10px; border-left: 5px solid #1f77b4; margin-bottom: 1rem;">
+                <div style="font-size: 80%; line-height: 1.8; color: #333;">
+                    <span style="font-size: 1.2em; font-weight: bold; color: #000;">🎯 현재 대상: {t_user[0]}</span><br>
+                    <div style="margin-left: 5px; margin-top: 5px;">
+                        <b>🌟 우승 기록:</b> {symbol_str}<br>
+                        <b>🏆 클랜 티어:</b> {t_user[3]}<br>
+                        <b>⚔️ 포지션:</b> 주 <b>{t_user[4]}</b> | 부 <b>{t_user[5]}</b>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Action: Skip
             if st.button("⏭️ 유찰 (다음 뽑기에서 제외)"):
