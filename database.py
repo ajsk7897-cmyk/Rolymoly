@@ -454,7 +454,7 @@ def get_user_stats():
         if u['status'] == 'APPROVED':
             stats[int(u['id'])] = {'total': 0, 'wins': 0, 'win_rate': 0}
             
-    valid_matches = {str(m['id']): m['winning_team'] for m in matches if m['match_type'] == 'NORMAL' and m['winning_team'] not in ['', '아직 모름']}
+    valid_matches = {str(m['id']): m['winning_team'] for m in matches if m['match_type'] in ['NORMAL', 'AUCTION'] and m['winning_team'] not in ['', '아직 모름']}
     
     for mp in mp_sheet:
         uid = int(mp['user_id'])
