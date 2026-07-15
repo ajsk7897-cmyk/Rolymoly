@@ -479,16 +479,37 @@ def get_auction_points_by_user():
     matches = matches_sheet.get_all_records()
     mps = mp_sheet.get_all_records()
     
+    # 2026년 7월 15일 21시 (패치 배포 시점)
+    cutoff_date = datetime(2026, 7, 15, 21, 0, 0)
+    
     points = {}
     for match in matches:
         if match['match_type'] == 'AUCTION' and match['winning_team'] not in ["", "아직 모름"]:
             all_match_mps = [mp for mp in mps if str(mp['match_id']) == str(match['id'])]
-            points_to_award = 5 if len(all_match_mps) >= 30 else 1
+            num_players = len(all_match_mps)
             
-            winning_mps = [mp for mp in all_match_mps if mp['team_name'] == match['winning_team']]
-            for mp in winning_mps:
-                uid = int(mp['user_id'])
-                points[uid] = points.get(uid, 0) + points_to_award
+            points_to_award = 0
+            if num_players >= 40:
+                points_to_award = 5  # 1 Medal
+            elif num_players >= 30:
+                points_to_award = 1  # 1 Star
+            else:
+                # 30인 미만 내전의 경우
+                match_date_str = match.get('date', '')
+                if match_date_str:
+                    try:
+                        match_date = datetime.strptime(match_date_str, "%Y-%m-%d %H:%M:%S")
+                        if match_date < cutoff_date:
+                            points_to_award = 1  # 과거 20인 내전 우승 별 유지
+                    except ValueError:
+                        pass
+            
+            if points_to_award > 0:
+                winning_mps = [mp for mp in all_match_mps if mp['team_name'] == match['winning_team']]
+                for mp in winning_mps:
+                    uid = int(mp['user_id'])
+                    points[uid] = points.get(uid, 0) + points_to_award
+                    
     return points
 
 init_db()
