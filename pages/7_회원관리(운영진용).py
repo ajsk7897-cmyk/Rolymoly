@@ -218,6 +218,7 @@ else:
     with col1:
         with st.container(border=True):
             st.markdown("#### 🔹 파워스코어 수기 수정")
+            st.caption("티어 자동 계산 대신 점수를 강제로 고정합니다.")
             target_id_score = st.selectbox("회원 선택 (수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="score_select")
             
             tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
@@ -263,6 +264,16 @@ else:
                 database.update_manual_stars(current_user_id_star, new_total_points)
                 st.success(f"적용 완료! (총 {new_total_points}점으로 저장되었습니다)")
                 st.rerun()
+                
+            with st.expander("❓ 포인트 누적 및 합산 로직 안내"):
+                st.markdown("""
+                <div style="background-color: rgba(255, 255, 255, 0.85); padding: 15px; border-radius: 10px; color: #111; font-size: 14px;">
+                <b>1. 기존 보상은 지워지지 않습니다.</b><br>
+                여기서 입력하는 포인트는 <b>'수동 보너스 포인트'</b>로 회원 DB에 따로 저장됩니다. 기존 내전 이력 게시판을 통해 시스템이 자동으로 쌓아둔 보상 기록을 덮어씌우거나 지우지 않습니다.<br><br>
+                <b>2. 실시간 누적 합산됩니다.</b><br>
+                회원 리스트에 최종적으로 보여지는 별/메달/트로피의 개수는 <b>[운영진 수동 부여 포인트 + 내전 우승 자동 포인트]</b>의 합산 결과입니다. 수동으로 점수를 준 이후에도 내전 우승 시 정상적으로 추가 기산됩니다.
+                </div>
+                """, unsafe_allow_html=True)
                 
     col3, col4 = st.columns(2)
             
