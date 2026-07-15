@@ -495,7 +495,7 @@ def get_auction_points_by_user():
                 points_to_award = 1  # 1 Star
             else:
                 # 30인 미만 내전의 경우
-                match_date_str = match.get('date', '')
+                match_date_str = match.get('match_date', '')
                 if match_date_str:
                     try:
                         match_date = datetime.strptime(match_date_str, "%Y-%m-%d %H:%M:%S")
