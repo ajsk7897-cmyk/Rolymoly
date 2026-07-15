@@ -222,7 +222,6 @@ else:
     with col1:
         with st.container(border=True):
             st.markdown("#### 🔹 파워스코어 수기 수정")
-            st.caption("티어 자동 계산 대신 점수를 강제로 고정합니다.")
             target_id_score = st.selectbox("회원 선택 (수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="score_select")
             
             tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
@@ -244,7 +243,6 @@ else:
     with col2:
         with st.container(border=True):
             st.markdown("#### 🔹 우승 기호 포인트 설정")
-            st.caption("1점=⭐별, 5점=🎖️메달, 25점=🏆트로피")
             target_id_star = st.selectbox("회원 선택 (포인트 설정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select")
             
             current_user_id_star = int(target_id_star.split(" - ")[0])
