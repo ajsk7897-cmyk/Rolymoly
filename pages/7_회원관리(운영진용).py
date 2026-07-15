@@ -13,6 +13,10 @@ set_background("190aa82672754bd77.gif")
 
 st.title("👑 회원 관리 (관리자 전용)")
 
+if "toast_msg" in st.session_state:
+    st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])
+    del st.session_state.toast_msg
+
 if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
@@ -67,12 +71,12 @@ else:
             with st.spinner("OP.GG에서 티어 정보를 가져오는 중..."):
                 solo_tier, flex_tier, power_score = fetch_tier_data(riot_id, tag_line)
                 database.approve_user(user_id, solo_tier, flex_tier, power_score)
-            st.success(f"승인 완료! (솔로랭크: {solo_tier}, 자유랭크: {flex_tier}, 파워스코어: {power_score})")
+            st.session_state.toast_msg = (f"승인 완료! (파워스코어: {power_score})", "✅")
             st.rerun()
             
         if col4.button("❌ 거절", key=f"reject_{user_id}"):
             database.reject_user(user_id)
-            st.warning("가입이 거절되었습니다.")
+            st.session_state.toast_msg = ("가입이 거절되었습니다.", "⚠️")
             st.rerun()
 
 st.divider()
@@ -99,7 +103,7 @@ if st.button("🔄 회원 전체 티어 최신화"):
     database.batch_update_user_tiers(tier_updates)
     
     my_bar.empty()
-    st.success("모든 회원의 티어 정보가 최신화되었습니다.")
+    st.session_state.toast_msg = ("모든 회원의 티어 정보가 최신화되었습니다.", "✅")
     st.rerun()
 
 # Style expander header to be dark yellow
@@ -234,7 +238,7 @@ else:
             if st.button("수정 적용", key="btn_score", use_container_width=True):
                 user_id = int(target_id_score.split(" - ")[0])
                 database.update_manual_score(user_id, new_score)
-                st.success(f"수정되었습니다. (반영 점수: {new_score})")
+                st.session_state.toast_msg = (f"수정되었습니다. (반영 점수: {new_score})", "✅")
                 st.rerun()
             
     with col2:
@@ -262,7 +266,7 @@ else:
             
             if st.button("포인트 적용", key="btn_star", use_container_width=True):
                 database.update_manual_stars(current_user_id_star, new_total_points)
-                st.success(f"적용 완료! (총 {new_total_points}점으로 저장되었습니다)")
+                st.session_state.toast_msg = (f"적용 완료! (총 {new_total_points}점으로 저장되었습니다)", "✅")
                 st.rerun()
                 
             with st.expander("❓ 포인트 누적 및 합산 로직 안내"):
@@ -285,7 +289,7 @@ else:
             if st.button("강제 탈퇴", type="primary", key="btn_kick", use_container_width=True):
                 user_id = int(target_id_kick.split(" - ")[0])
                 database.kick_user(user_id)
-                st.warning("탈퇴 처리되었습니다.")
+                st.session_state.toast_msg = ("탈퇴 처리되었습니다.", "⚠️")
                 st.rerun()
 
     with col4:
@@ -300,7 +304,7 @@ else:
             if st.button("권한 적용", key="btn_admin", use_container_width=True):
                 val = 1 if admin_action == "운영진 (관리자)" else 0
                 database.update_admin_role(current_user_id, val)
-                st.success("권한이 변경되었습니다.")
+                st.session_state.toast_msg = ("권한이 변경되었습니다.", "✅")
                 st.rerun()
 
     st.markdown("---")
@@ -332,7 +336,7 @@ else:
             
         if st.button("포지션 적용", key="btn_pos", use_container_width=True):
             database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
-            st.success("포지션이 성공적으로 변경되었습니다.")
+            st.session_state.toast_msg = ("포지션이 성공적으로 변경되었습니다.", "✅")
             st.rerun()
 
 st.divider()
@@ -346,7 +350,7 @@ if matches:
     if st.button("해당 내전 삭제", type="primary"):
         match_id_to_delete = int(target_match.split(" - ")[0])
         database.delete_match(match_id_to_delete)
-        st.success(f"{match_id_to_delete}번 내전이 삭제되었습니다. (관련 파워스코어 증감도 롤백되었습니다.)")
+        st.session_state.toast_msg = (f"{match_id_to_delete}번 내전이 삭제되었습니다.", "🗑️")
         st.rerun()
 else:
     st.info("삭제할 내전 이력이 없습니다.")
@@ -370,7 +374,7 @@ else:
     if col1.button("네, 모두 삭제합니다", type="primary"):
         database.delete_all_history()
         st.session_state.delete_confirm = False
-        st.success("모든 내전 이력이 삭제되었습니다.")
+        st.session_state.toast_msg = ("모든 내전 이력이 삭제되었습니다.", "🚨")
         st.rerun()
     if col2.button("취소"):
         st.session_state.delete_confirm = False
