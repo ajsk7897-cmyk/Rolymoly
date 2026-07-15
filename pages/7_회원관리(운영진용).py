@@ -245,10 +245,23 @@ else:
             current_user_id_star = int(target_id_star.split(" - ")[0])
             current_manual_points = int(df[df['아이디'] == current_user_id_star]['수기 기호 포인트'].values[0])
             
-            new_stars = st.number_input("포인트 입력 (기존 수기 포인트를 덮어씁니다)", value=current_manual_points, min_value=0, step=1)
+            current_trophies = current_manual_points // 25
+            current_medals = (current_manual_points % 25) // 5
+            current_stars = current_manual_points % 5
+            
+            c_t, c_m, c_s = st.columns(3)
+            with c_t:
+                new_trophy = st.number_input("🏆 트로피", value=current_trophies, min_value=0, step=1)
+            with c_m:
+                new_medal = st.number_input("🎖️ 메달", value=current_medals, min_value=0, step=1)
+            with c_s:
+                new_star = st.number_input("⭐ 별", value=current_stars, min_value=0, step=1)
+                
+            new_total_points = (new_trophy * 25) + (new_medal * 5) + new_star
+            
             if st.button("포인트 적용", key="btn_star", use_container_width=True):
-                database.update_manual_stars(current_user_id_star, new_stars)
-                st.success(f"수기 우승 포인트가 {new_stars}점으로 변경되었습니다.")
+                database.update_manual_stars(current_user_id_star, new_total_points)
+                st.success(f"적용 완료! (총 {new_total_points}점으로 저장되었습니다)")
                 st.rerun()
                 
     col3, col4 = st.columns(2)
