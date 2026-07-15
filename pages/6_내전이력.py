@@ -242,8 +242,9 @@ else:
             
             if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
                 effective_tier = calculate_clan_tier(base_score)
-                bonus_change = calculate_mmr_delta(effective_tier)
-                if t_name == winning_team:
+                is_win = (t_name == winning_team)
+                bonus_change = calculate_mmr_delta(effective_tier, is_win=is_win)
+                if is_win:
                     change_str = f"+{bonus_change}점"
                 else:
                     change_str = f"-{bonus_change}점"
@@ -305,8 +306,9 @@ else:
                 
                 if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
                     effective_tier = calculate_clan_tier(base_score)
-                    bonus_change = calculate_mmr_delta(effective_tier)
-                    if t_name == winning_team:
+                    is_win = (t_name == winning_team)
+                    bonus_change = calculate_mmr_delta(effective_tier, is_win=is_win)
+                    if is_win:
                         change_str = f"+{bonus_change}점"
                     else:
                         change_str = f"-{bonus_change}점"
