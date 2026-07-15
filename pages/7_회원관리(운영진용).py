@@ -148,6 +148,7 @@ approved_users = database.get_all_approved_users()
 search_query = st.selectbox("🔍 회원 이름 검색", options=["전체"] + [f"{u[1]}#{u[2]}" for u in approved_users]) if approved_users else "전체"
 
 user_stats = database.get_user_stats()
+auction_points = database.get_auction_points_by_user()
 
 if not approved_users:
     st.info("등록된 회원이 없습니다.")
@@ -168,6 +169,17 @@ else:
         final_score = base_score + match_bonus
         clan_tier = calculate_clan_tier(base_score, final_score)
         
+        # Calculate symbols for 내전 보상
+        total_points = auction_points.get(user_id, 0) + manual_stars
+        trophies = total_points // 25
+        medals = (total_points % 25) // 5
+        stars = total_points % 5
+        symbol_str = ""
+        if trophies > 0: symbol_str += "🏆" * trophies
+        if medals > 0: symbol_str += "🎖️" * medals
+        if stars > 0: symbol_str += "⭐" * stars
+        if not symbol_str: symbol_str = "-"
+        
         stats = user_stats.get(user_id, {'total': 0, 'wins': 0, 'win_rate': 0})
         
         data.append({
@@ -175,6 +187,7 @@ else:
             '닉네임': riot_id,
             '태그라인': tag_line,
             '클랜 티어': clan_tier,
+            '내전 보상': symbol_str,
             '주 포지션': main_pos,
             '부 포지션': sub_pos,
             '내전 참가 판수': stats['total'],
@@ -193,7 +206,8 @@ else:
     if df.empty:
         st.warning("검색 결과가 없습니다.")
     else:
-        st.dataframe(df, use_container_width=True)
+        display_df = df.set_index(['아이디', '닉네임', '태그라인', '클랜 티어', '내전 보상'])
+        st.dataframe(display_df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
     col1, col2 = st.columns(2)
