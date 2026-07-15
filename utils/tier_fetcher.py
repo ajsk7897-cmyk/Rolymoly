@@ -66,7 +66,7 @@ def calculate_power_score(solo_tier_str, flex_tier_str):
     flex_points = get_flex_points(flex_tier_str)
     return solo_points + flex_points
 
-def calculate_mmr_delta(solo_tier_str):
+def calculate_mmr_delta(solo_tier_str, is_win=True):
     if not solo_tier_str or solo_tier_str == "Unranked":
         return 2 # default for unranked
         
@@ -83,21 +83,21 @@ def calculate_mmr_delta(solo_tier_str):
         return 2
         
     idx = TIER_ORDER.index(matched_tier)
-    
-    if matched_tier == "Challenger":
-        return 10
-        
-    next_tier = TIER_ORDER[idx + 1]
-    
-    # Calculate score difference
     curr_score = TIER_SCORE_MAP.get(matched_tier, 0)
-    next_score = TIER_SCORE_MAP.get(next_tier, 0)
     
-    # Master is special case in solo point, but TIER_SCORE_MAP has base 550 for Master, wait we don't have Master in map!
-    # I need to add Master to TIER_SCORE_MAP! 
-    # Let me add it to the map above in a separate chunk.
+    if is_win:
+        if matched_tier == "Challenger":
+            return 10
+        next_tier = TIER_ORDER[idx + 1]
+        next_score = TIER_SCORE_MAP.get(next_tier, 0)
+        diff = next_score - curr_score
+    else:
+        if matched_tier == "Iron 4":
+            return 2
+        prev_tier = TIER_ORDER[idx - 1]
+        prev_score = TIER_SCORE_MAP.get(prev_tier, 0)
+        diff = curr_score - prev_score
     
-    diff = next_score - curr_score
     if diff < 0:
         diff = 10
         
@@ -110,37 +110,11 @@ def calculate_clan_tier(base_score, final_score=None):
         
     sorted_tiers = sorted(TIER_SCORE_MAP.items(), key=lambda x: x[1], reverse=True)
     
-    # Calculate base tier (strict mapping)
-    base_tier_idx = len(sorted_tiers) - 1
-    for i, (tier, score) in enumerate(sorted_tiers):
-        if base_score >= score:
-            base_tier_idx = i
-            break
-            
-    base_tier_score = sorted_tiers[base_tier_idx][1]
-    
-    if final_score >= base_tier_score:
-        # Moving UP or staying: use strict mapping
-        for tier, score in sorted_tiers:
-            if final_score >= score:
-                return tier
-        return "Iron 4"
-    else:
-        # Moving DOWN: hysteresis (drop only if reaching the NEXT lower tier's base score)
-        for i in range(base_tier_idx, len(sorted_tiers)):
-            curr_tier = sorted_tiers[i][0]
-            curr_score = sorted_tiers[i][1]
-            
-            # The lower bound is the base score of the next tier down
-            if i + 1 < len(sorted_tiers):
-                next_score = sorted_tiers[i+1][1]
-            else:
-                next_score = -float('inf')
-                
-            if next_score < final_score <= curr_score:
-                return curr_tier
-                
-        return "Iron 4"
+    # Strict mapping based on final_score
+    for tier, score in sorted_tiers:
+        if final_score >= score:
+            return tier
+    return "Iron 4"
 
 def fetch_tier_data(riot_id, tag_line):
     """

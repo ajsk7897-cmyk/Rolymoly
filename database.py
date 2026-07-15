@@ -252,12 +252,13 @@ def delete_match(match_id):
 
                     base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
                     effective_tier = calculate_clan_tier(base_score)
-                    bonus_change = calculate_mmr_delta(effective_tier)
                     current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
                     
                     if mp['team_name'] == winning_team:
+                        bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
                         current_bonus -= bonus_change # rollback win
                     else:
+                        bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
                         current_bonus += bonus_change # rollback loss
                         
                     # Cap at -base_score to prevent final score < 0
@@ -380,13 +381,14 @@ def _apply_match_bonus(players_data, winning_team):
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
             
             effective_tier = calculate_clan_tier(base_score)
-            bonus_change = calculate_mmr_delta(effective_tier)
             
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
             if team_name == winning_team:
+                bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
                 current_bonus += bonus_change
             else:
+                bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
                 current_bonus -= bonus_change
                 
             current_bonus = max(-base_score, current_bonus)
@@ -415,13 +417,14 @@ def _rollback_match_bonus(players_data, winning_team):
             base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
             
             effective_tier = calculate_clan_tier(base_score)
-            bonus_change = calculate_mmr_delta(effective_tier)
             
             current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
             
             if team_name == winning_team:
+                bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
                 current_bonus -= bonus_change
             else:
+                bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
                 current_bonus += bonus_change
                 
             current_bonus = max(-base_score, current_bonus)
