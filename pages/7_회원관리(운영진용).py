@@ -206,7 +206,10 @@ else:
     if df.empty:
         st.warning("검색 결과가 없습니다.")
     else:
-        display_df = df.set_index(['아이디', '닉네임', '태그라인', '클랜 티어', '내전 보상'])
+        display_df = df.copy()
+        display_df['회원요약 (고정)'] = "[" + display_df['클랜 티어'].astype(str) + "] " + display_df['내전 보상'].astype(str) + " " + display_df['닉네임'].astype(str) + "#" + display_df['태그라인'].astype(str)
+        display_df = display_df.drop(columns=['닉네임', '태그라인', '클랜 티어', '내전 보상'])
+        display_df = display_df.set_index('회원요약 (고정)')
         st.dataframe(display_df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
