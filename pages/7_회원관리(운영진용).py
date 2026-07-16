@@ -217,7 +217,23 @@ else:
         st.dataframe(display_df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
-    col1, col2 = st.columns(2, vertical_alignment="bottom")
+    
+    st.markdown("""
+    <style>
+    /* 컬럼 내 테두리 컨테이너 위아래 끝단 맞춤 */
+    [data-testid="column"] > [data-testid="stVerticalBlockBorderWrapper"] {
+        height: 100% !important;
+    }
+    [data-testid="column"] > [data-testid="stVerticalBlockBorderWrapper"] > div[data-testid="stVerticalBlock"] {
+        height: 100% !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2, vertical_alignment="top")
     
     with col1:
         with st.container(border=True):
@@ -277,7 +293,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-    col3, col4 = st.columns(2, vertical_alignment="bottom")
+    col3, col4 = st.columns(2, vertical_alignment="top")
             
     with col3:
         with st.container(border=True):
