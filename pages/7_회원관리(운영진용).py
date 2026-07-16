@@ -217,7 +217,7 @@ else:
         st.dataframe(display_df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, vertical_alignment="bottom")
     
     with col1:
         with st.container(border=True):
@@ -252,7 +252,7 @@ else:
             current_medals = (current_manual_points % 25) // 5
             current_stars = current_manual_points % 5
             
-            c_t, c_m, c_s = st.columns(3)
+            c_t, c_m, c_s = st.columns(3, vertical_alignment="bottom")
             with c_t:
                 new_trophy = st.number_input("🏆 트로피", value=current_trophies, min_value=0, step=1)
             with c_m:
@@ -277,7 +277,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-    col3, col4 = st.columns(2)
+    col3, col4 = st.columns(2, vertical_alignment="bottom")
             
     with col3:
         with st.container(border=True):
@@ -326,7 +326,7 @@ else:
         except ValueError:
             sub_index = 0
 
-        col_p1, col_p2 = st.columns(2)
+        col_p1, col_p2 = st.columns(2, vertical_alignment="bottom")
         with col_p1:
             new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=main_index)
         with col_p2:

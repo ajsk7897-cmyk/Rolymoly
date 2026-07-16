@@ -85,7 +85,7 @@ else:
 selected_players = {}
 
 with st.form("participant_form"):
-    cols = st.columns(5)
+    cols = st.columns(5, vertical_alignment="bottom")
     for i, role in enumerate(roles):
         with cols[i]:
             st.markdown(f"**{role}**")

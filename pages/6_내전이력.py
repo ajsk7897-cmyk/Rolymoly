@@ -83,7 +83,7 @@ if ongoing_sessions:
             elif s["format"] == "GROUP_STAGE":
                 # Render Standings
                 st.markdown("#### 🏆 조별 순위표")
-                c1, c2 = st.columns(2)
+                c1, c2 = st.columns(2, vertical_alignment="bottom")
                 standings = s["standings"]
                 
                 with c1:
@@ -102,7 +102,7 @@ if ongoing_sessions:
                     
                 # Render Matches
                 st.markdown("#### ⚔️ 조별 리그 경기 결과 입력")
-                c3, c4 = st.columns(2)
+                c3, c4 = st.columns(2, vertical_alignment="bottom")
                 
                 with c3:
                     st.markdown("**A조 경기**")
@@ -137,7 +137,7 @@ if ongoing_sessions:
                                 st.rerun()
 
                 st.markdown("#### 🥇 조 1위 확정 및 결승전")
-                c5, c6 = st.columns(2)
+                c5, c6 = st.columns(2, vertical_alignment="bottom")
                 with c5:
                     a_teams = [k for k, v in standings.items() if v["group"] == "A"]
                     cur_a_winner = s.get("group_A_winner")
@@ -341,7 +341,7 @@ else:
             if len(teams) > 0:
                 team_items = list(teams.items())
                 for row_start in range(0, len(team_items), 2):
-                    cols = st.columns(2)
+                    cols = st.columns(2, vertical_alignment="bottom")
                     for col_idx in range(2):
                         if row_start + col_idx < len(team_items):
                             t_name, members = team_items[row_start + col_idx]

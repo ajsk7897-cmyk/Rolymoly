@@ -20,7 +20,7 @@ with st.form("join_form"):
     birthdate = st.date_input("생년월일", min_value=datetime(1950, 1, 1).date())
     
     positions = ["탑", "정글", "미드", "원딜", "서폿"]
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, vertical_alignment="bottom")
     with col1:
         main_pos = st.selectbox("주 포지션", positions)
     with col2:

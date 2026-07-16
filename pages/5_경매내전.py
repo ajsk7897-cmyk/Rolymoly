@@ -134,7 +134,7 @@ if not st.session_state.auction_started:
         # Select team leaders from the participants
         st.markdown("#### 팀장 지정 (선택한 참가자 중에서 선택)")
         leaders = []
-        cols = st.columns(3)
+        cols = st.columns(3, vertical_alignment="bottom")
         for i in range(num_teams):
             with cols[i % 3]:
                 leader = st.selectbox(f"Team {i+1} 팀장", options=[None] + selected_participants, format_func=lambda x: "선택안함" if x is None else user_dict[x][0], key=f"leader_{i}")
@@ -210,7 +210,7 @@ else:
     
     # Render Teams (Max 2 per row)
     for row_start in range(0, st.session_state.num_teams, 2):
-        cols = st.columns(2)
+        cols = st.columns(2, vertical_alignment="bottom")
         for col_idx in range(2):
             if row_start + col_idx < st.session_state.num_teams:
                 team = st.session_state.teams[row_start + col_idx]
@@ -289,7 +289,7 @@ else:
             st.markdown("<span style='font-size: 70%; font-weight: bold;'>낙찰 팀 (클릭 시 즉시 배정)</span>", unsafe_allow_html=True)
             
             for row_start in range(0, st.session_state.num_teams, 2):
-                cols_team = st.columns(2)
+                cols_team = st.columns(2, vertical_alignment="bottom")
                 for col_idx in range(2):
                     if row_start + col_idx < st.session_state.num_teams:
                         t_idx = row_start + col_idx
@@ -326,7 +326,7 @@ else:
             if not available_teams:
                 st.warning("배정 가능한 팀이 없습니다.")
             else:
-                cols_skip = st.columns(len(available_teams))
+                cols_skip = st.columns(len(available_teams, vertical_alignment="bottom"))
                 for t_idx, target_team in enumerate(available_teams):
                     with cols_skip[t_idx]:
                         if st.button(f"{target_team['name']}", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
@@ -363,7 +363,7 @@ else:
         if not assigned_members:
             st.info("현재 배정된 팀원이 없습니다.")
         else:
-            col_e1, col_e2 = st.columns(2)
+            col_e1, col_e2 = st.columns(2, vertical_alignment="bottom")
             with col_e1:
                 def format_member(m):
                     t_name = st.session_state.teams[m['team_idx']]['name']
