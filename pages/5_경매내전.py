@@ -82,8 +82,13 @@ def format_user(user):
     abbr_tier = abbreviate_tier(clan_tier)
     return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos, manual_stars
 
-user_options = [format_user(u) for u in approved_users]
-user_dict = {u[1]: u for u in user_options}
+@st.cache_data(ttl=60)
+def get_formatted_users(users):
+    options = [format_user(u) for u in users]
+    u_dict = {u[1]: u for u in options}
+    return options, u_dict
+
+user_options, user_dict = get_formatted_users(approved_users)
 
 # Init session state for auction
 if "auction_started" not in st.session_state:

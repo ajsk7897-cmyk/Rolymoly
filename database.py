@@ -84,12 +84,9 @@ def get_all_users():
     headers = rows[0]
     records = []
     for row in rows[1:]:
-        record = {}
-        for i, h in enumerate(headers):
-            val = row[i] if i < len(row) else ''
-            if val.startswith("'"):
-                val = val[1:]
-            record[h] = val
+        padded_row = row + [''] * (len(headers) - len(row))
+        record = {h: (val[1:] if isinstance(val, str) and val.startswith("'") else val) 
+                  for h, val in zip(headers, padded_row)}
         records.append(record)
     return records
 
@@ -229,11 +226,10 @@ def delete_all_history():
 def delete_match(match_id):
     matches_sheet = get_worksheet("matches")
     mp_sheet = get_worksheet("match_players")
-    users_sheet = get_worksheet("users")
     
-    matches = matches_sheet.get_all_records()
+    matches = _get_all_matches_raw()
     match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
-    mps = mp_sheet.get_all_records()
+    mps = _get_all_match_players_raw()
     
     if match_to_delete and match_to_delete['match_type'] == 'NORMAL' and match_to_delete['winning_team'] not in ['아직 모름', '']:
         winning_team = match_to_delete['winning_team']
@@ -286,9 +282,22 @@ def delete_match(match_id):
     clear_cache()
 
 @st.cache_data(ttl=60)
+def _get_all_matches_raw():
+    try:
+        return get_worksheet("matches").get_all_records()
+    except Exception:
+        return []
+
+@st.cache_data(ttl=60)
+def _get_all_match_players_raw():
+    try:
+        return get_worksheet("match_players").get_all_records()
+    except Exception:
+        return []
+
+@st.cache_data(ttl=60)
 def get_matches():
-    matches_sheet = get_worksheet("matches")
-    records = matches_sheet.get_all_records()
+    records = _get_all_matches_raw()
     try:
         records = sorted(records, key=lambda x: str(x['match_date']), reverse=True)
     except:
@@ -297,10 +306,7 @@ def get_matches():
 
 @st.cache_data(ttl=60)
 def get_match_players(match_id):
-    mp_sheet = get_worksheet("match_players")
-    users_sheet = get_worksheet("users")
-    
-    mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+    mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
     users = {str(u['id']): u for u in get_all_users()}
     
     result = []
@@ -341,14 +347,14 @@ def update_match_winner(match_id, new_winning_team):
     matches_sheet = get_worksheet("matches")
     mp_sheet = get_worksheet("match_players")
     
-    matches = matches_sheet.get_all_records()
+    matches = _get_all_matches_raw()
     match = next((m for m in matches if str(m['id']) == str(match_id)), None)
     
     if match:
         old_winning_team = match['winning_team']
         
         if match['match_type'] == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
-            mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+            mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
             players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
             _rollback_match_bonus(players_data_rollback, old_winning_team)
             
@@ -357,7 +363,7 @@ def update_match_winner(match_id, new_winning_team):
             matches_sheet.update_cell(cell.row, 5, new_winning_team)
             
         if match['match_type'] == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
-            mps = [mp for mp in mp_sheet.get_all_records() if str(mp['match_id']) == str(match_id)]
+            mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
             players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
             _apply_match_bonus(players_data, new_winning_team)
             
@@ -438,16 +444,8 @@ def _rollback_match_bonus(players_data, winning_team):
 @st.cache_data(ttl=60)
 def get_user_stats():
     users = get_all_users()
-    
-    try:
-        matches = get_worksheet("matches").get_all_records()
-    except Exception:
-        matches = []
-        
-    try:
-        mp_sheet = get_worksheet("match_players").get_all_records()
-    except Exception:
-        mp_sheet = []
+    matches = _get_all_matches_raw()
+    mp_sheet = _get_all_match_players_raw()
     
     stats = {}
     for u in users:
@@ -473,11 +471,8 @@ def get_user_stats():
 
 @st.cache_data(ttl=60)
 def get_auction_points_by_user():
-    matches_sheet = get_worksheet("matches")
-    mp_sheet = get_worksheet("match_players")
-    
-    matches = matches_sheet.get_all_records()
-    mps = mp_sheet.get_all_records()
+    matches = _get_all_matches_raw()
+    mps = _get_all_match_players_raw()
     
     # 2026년 7월 15일 21시 (패치 배포 시점)
     cutoff_date = datetime(2026, 7, 15, 21, 0, 0)
