@@ -193,8 +193,8 @@ else:
         background-color: #f2f4f7 !important;
         border-radius: 12px !important;
         padding: 10px !important;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
-        border: 1px solid #dcdcdc !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 3px 6px rgba(255, 255, 255, 1), inset 0 -3px 6px rgba(0, 0, 0, 0.05) !important;
+        border: 1px solid #b0b0b0 !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] h1,
     [data-testid="stVerticalBlockBorderWrapper"] h2,
