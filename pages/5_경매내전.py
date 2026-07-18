@@ -269,6 +269,18 @@ else:
                 
     st.divider()
     
+    st.markdown(f"### 📋 잔여 경매 매물 목록 ({len(st.session_state.remaining_pool)}명)")
+    with st.container(height=150):
+        if st.session_state.remaining_pool:
+            pool_texts = []
+            for uid in st.session_state.remaining_pool:
+                pool_texts.append(f"{user_dict[uid][0]} [{user_dict[uid][4]}/{user_dict[uid][5]}]")
+            st.markdown(" • ".join(pool_texts))
+        else:
+            st.write("남은 매물이 없습니다.")
+            
+    st.divider()
+    
     # Auction Control
     col1, col2 = st.columns([1, 1], vertical_alignment="bottom")
     
