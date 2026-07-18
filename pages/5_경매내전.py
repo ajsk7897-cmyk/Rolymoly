@@ -355,7 +355,7 @@ else:
             if not available_teams:
                 st.warning("배정 가능한 팀이 없습니다.")
             else:
-                cols_skip = st.columns(len(available_teams, vertical_alignment="bottom"))
+                cols_skip = st.columns(len(available_teams), vertical_alignment="bottom")
                 for t_idx, target_team in enumerate(available_teams):
                     with cols_skip[t_idx]:
                         if st.button(f"{target_team['name']} ({target_team['points']}p)", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
