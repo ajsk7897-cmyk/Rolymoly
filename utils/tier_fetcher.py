@@ -1,31 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import logging
+from typing import Tuple, Optional
 
-TIER_SCORE_MAP = {
-    "Iron 4": 10, "Iron 3": 10, "Iron 2": 10, "Iron 1": 10,
-    "Bronze 4": 20, "Bronze 3": 30, "Bronze 2": 40, "Bronze 1": 50,
-    "Silver 4": 60, "Silver 3": 70, "Silver 2": 80, "Silver 1": 90,
-    "Gold 4": 120, "Gold 3": 130, "Gold 2": 140, "Gold 1": 150,
-    "Platinum 4": 200, "Platinum 3": 210, "Platinum 2": 220, "Platinum 1": 230,
-    "Emerald 4": 280, "Emerald 3": 300, "Emerald 2": 320, "Emerald 1": 340,
-    "Diamond 4": 390, "Diamond 3": 420, "Diamond 2": 450, "Diamond 1": 480,
-    "Master": 550, "Grandmaster": 800, "Challenger": 1000
-}
+from config import TIER_SCORE_MAP, TIER_ORDER
 
-TIER_ORDER = [
-    "Iron 4", "Iron 3", "Iron 2", "Iron 1",
-    "Bronze 4", "Bronze 3", "Bronze 2", "Bronze 1",
-    "Silver 4", "Silver 3", "Silver 2", "Silver 1",
-    "Gold 4", "Gold 3", "Gold 2", "Gold 1",
-    "Platinum 4", "Platinum 3", "Platinum 2", "Platinum 1",
-    "Emerald 4", "Emerald 3", "Emerald 2", "Emerald 1",
-    "Diamond 4", "Diamond 3", "Diamond 2", "Diamond 1",
-    "Master", "Grandmaster", "Challenger"
-]
+# 로깅 설정
+logger = logging.getLogger(__name__)
 
-def calculate_power_score(solo_tier_str, flex_tier_str):
-    def get_solo_points(tier_str):
+def calculate_power_score(solo_tier_str: str, flex_tier_str: str) -> int:
+    """
+    솔로랭크와 자유랭크 티어를 기반으로 파워스코어 계산
+    """
+    def get_solo_points(tier_str: str) -> int:
         if not tier_str or tier_str == "Unranked":
             return 0
             
@@ -42,14 +30,14 @@ def calculate_power_score(solo_tier_str, flex_tier_str):
                     return 600
                 else:
                     return 550
-            return 600 # Fallback for Master if no LP
+            return 600  # Fallback for Master if no LP
             
         for k, v in TIER_SCORE_MAP.items():
             if clean_tier.startswith(k):
                 return v
         return 0
 
-    def get_flex_points(tier_str):
+    def get_flex_points(tier_str: str) -> int:
         if not tier_str or tier_str == "Unranked":
             return 0
         clean_tier = re.sub(r' \d+ LP', '', tier_str).strip()
@@ -66,9 +54,13 @@ def calculate_power_score(solo_tier_str, flex_tier_str):
     flex_points = get_flex_points(flex_tier_str)
     return solo_points + flex_points
 
-def calculate_mmr_delta(solo_tier_str, is_win=True):
+def calculate_mmr_delta(solo_tier_str: str, is_win: bool = True) -> int:
+    """
+    내전 결과에 따른 MMR 증감량 계산
+    (한 단계 상위 티어 점수 - 현재 티어 점수) / 5, 최소 1점
+    """
     if not solo_tier_str or solo_tier_str == "Unranked":
-        return 2 # default for unranked
+        return 2  # default for unranked
         
     clean_tier = re.sub(r' \d+ LP', '', solo_tier_str).strip()
     
@@ -104,7 +96,10 @@ def calculate_mmr_delta(solo_tier_str, is_win=True):
     delta = diff // 5
     return max(1, delta)
 
-def calculate_clan_tier(base_score, final_score=None):
+def calculate_clan_tier(base_score: int, final_score: Optional[int] = None) -> str:
+    """
+    파워스코어 기반 클랜 티어 계산
+    """
     if final_score is None:
         final_score = base_score
         
@@ -116,10 +111,10 @@ def calculate_clan_tier(base_score, final_score=None):
             return tier
     return "Iron 4"
 
-def fetch_tier_data(riot_id, tag_line):
+def fetch_tier_data(riot_id: str, tag_line: str) -> Tuple[str, str, int]:
     """
-    Crawls OP.GG to fetch tier information.
-    Currently uses simple scraping. If blocked, returns Unranked safely.
+    OP.GG에서 티어 정보 크롤링
+    실패시 Unranked 반환
     """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -195,14 +190,17 @@ def fetch_tier_data(riot_id, tag_line):
                     solo_tier = t_solo
 
     except Exception as e:
-        print(f"Error fetching data for {riot_id}#{tag_line}: {e}")
-        pass
+        logger.error(f"Error fetching data for {riot_id}#{tag_line}: {e}")
         
     power_score = calculate_power_score(solo_tier, flex_tier)
     
     return solo_tier, flex_tier, power_score
 
-def abbreviate_tier(tier_str):
+def abbreviate_tier(tier_str: str) -> str:
+    """
+    티어 문자열을 약어로 변환
+    예: "Platinum 4" -> "P4", "Challenger" -> "CH"
+    """
     if not tier_str or tier_str == "Unranked":
         return "UR"
     
@@ -232,4 +230,8 @@ def abbreviate_tier(tier_str):
 
 # For testing
 if __name__ == "__main__":
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from config import TIER_SCORE_MAP, TIER_ORDER
     print(fetch_tier_data("Hide on bush", "KR1"))

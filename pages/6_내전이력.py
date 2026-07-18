@@ -10,6 +10,7 @@ import importlib
 importlib.reload(database)
 from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 from utils.tournament_manager import get_ongoing_sessions, update_league_match, update_tournament_match, complete_session, update_group_match, update_group_winners, update_final_match
+from utils.helpers import get_match_bonus_change, format_score_change
 
 from utils.ui import set_background
 st.set_page_config(page_title="내전 이력", page_icon="📜", layout="wide")
@@ -242,13 +243,9 @@ else:
             f_score = base_score + m_bonus
             
             if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                effective_tier = calculate_clan_tier(base_score)
                 is_win = (t_name == winning_team)
-                bonus_change = calculate_mmr_delta(effective_tier, is_win=is_win)
-                if is_win:
-                    change_str = f"+{bonus_change}점"
-                else:
-                    change_str = f"-{bonus_change}점"
+                bonus_change = get_match_bonus_change(base_score, is_win)
+                change_str = format_score_change(bonus_change, is_win)
             else:
                 change_str = "-"
                 
@@ -306,13 +303,9 @@ else:
                 f_score = base_score + m_bonus
                 
                 if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                    effective_tier = calculate_clan_tier(base_score)
                     is_win = (t_name == winning_team)
-                    bonus_change = calculate_mmr_delta(effective_tier, is_win=is_win)
-                    if is_win:
-                        change_str = f"+{bonus_change}점"
-                    else:
-                        change_str = f"-{bonus_change}점"
+                    bonus_change = get_match_bonus_change(base_score, is_win)
+                    change_str = format_score_change(bonus_change, is_win)
                 else:
                     change_str = "-"
                     

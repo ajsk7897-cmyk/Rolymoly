@@ -6,6 +6,7 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
+from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols
 
 from utils.ui import set_background
 st.set_page_config(page_title="회원 리스트", page_icon="👥", layout="wide")
@@ -23,62 +24,36 @@ auction_points = database.get_auction_points_by_user()
 user_names = [f"{u[1]}#{u[2]}" for u in approved_users] if approved_users else []
 search_query = st.selectbox("🔍 클랜원 닉네임 검색", options=["전체"] + user_names)
 
-
-
 if not approved_users:
     st.info("아직 승인된 회원이 없습니다.")
 else:
     data = []
     for user in approved_users:
-        if len(user) == 12:
-            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
-        else: # Fallback in case of old data structure
-            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-            main_pos, sub_pos = "", ""
-            
-        full_id = f"{riot_id}#{tag_line}"
+        user_dict = unpack_user_data(user)
+        
+        full_id = f"{user_dict['riot_id']}#{user_dict['tag_line']}"
         
         if search_query != "전체" and search_query != full_id:
             continue
         
-        # Calculate final score
-        base_score = manual_score if manual_score != -1 else power_score
-        final_score = base_score + match_bonus
+        # Calculate scores using helper
+        base_score, final_score, clan_tier = calculate_user_scores(user_dict)
         
-        # Calculate points and symbols
-        total_points = auction_points.get(user_id, 0) + manual_stars
+        # Calculate trophy symbols
+        total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
+        symbol_str = calculate_trophy_symbols(total_points)
         
-        trophies = total_points // 25
-        medals = (total_points % 25) // 5
-        stars = total_points % 5
-        
-        symbol_str = ""
-        if trophies > 0: symbol_str += "🏆" * trophies
-        if medals > 0: symbol_str += "🎖️" * medals
-        if stars > 0: symbol_str += "⭐" * stars
-        if not symbol_str: symbol_str = "-"
-        
-        full_id = f"{riot_id}#{tag_line}"
-        role_str = "👑 운영진" if is_admin == 1 else "일반"
-        
-        if match_bonus > 0:
-            score_change_str = f"+{match_bonus}점"
-        elif match_bonus < 0:
-            score_change_str = f"{match_bonus}점"
-        else:
-            score_change_str = "0점"
-        
-        clan_tier = calculate_clan_tier(base_score, final_score)
+        role_str = "👑 운영진" if user_dict['is_admin'] == 1 else "일반"
         
         data.append({
             "클랜 티어": clan_tier,
             "권한": role_str,
             "🌟 우승 기호": symbol_str,
             "롤 아이디": full_id,
-            "주 포지션": main_pos,
-            "부 포지션": sub_pos,
-            "솔로랭크": abbreviate_tier(solo_tier),
-            "자유랭크": abbreviate_tier(flex_tier),
+            "주 포지션": user_dict['main_pos'],
+            "부 포지션": user_dict['sub_pos'],
+            "솔로랭크": abbreviate_tier(user_dict['solo_tier']),
+            "자유랭크": abbreviate_tier(user_dict['flex_tier']),
             "최종 파워스코어": final_score
         })
         

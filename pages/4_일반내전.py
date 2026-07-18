@@ -7,8 +7,11 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
+from utils.helpers import unpack_user_data, calculate_user_scores, format_user_for_selectbox
 
 from utils.ui import set_background
+from config import MIN_PLAYERS_REQUIRED, DEFAULT_ROLES
+
 st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide")
 set_background("images (2).jpg")
 
@@ -38,21 +41,16 @@ st.markdown("라인별로 2명씩 총 10명의 참가자를 선택하면, 파워
 
 approved_users = database.get_all_approved_users()
 
-if not approved_users or len(approved_users) < 10:
-    st.warning("승인된 회원이 10명 이상이어야 내전을 진행할 수 있습니다.")
+if not approved_users or len(approved_users) < MIN_PLAYERS_REQUIRED:
+    st.warning(f"승인된 회원이 {MIN_PLAYERS_REQUIRED}명 이상이어야 내전을 진행할 수 있습니다.")
     st.stop()
 
-# Helper to format user for selectbox
+# Helper to format user for selectbox using helpers
 def format_user(user):
-    if len(user) == 12:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
-    else:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-    base_score = manual_score if manual_score != -1 else power_score
-    final_score = base_score + match_bonus
-    clan_tier = calculate_clan_tier(base_score, final_score)
+    user_dict = unpack_user_data(user)
+    _, final_score, clan_tier = calculate_user_scores(user_dict)
     abbr_tier = abbreviate_tier(clan_tier)
-    return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, riot_id
+    return f"[{abbr_tier}] {user_dict['riot_id']}#{user_dict['tag_line']} (스코어: {final_score})", user_dict['user_id'], final_score, user_dict['riot_id']
 
 @st.cache_data(ttl=60)
 def get_formatted_users(users):
@@ -62,7 +60,7 @@ def get_formatted_users(users):
 
 user_options, user_dict = get_formatted_users(approved_users)
 
-roles = ["TOP", "JG", "MID", "AD", "SUP"]
+roles = DEFAULT_ROLES
 
 st.subheader("1. 참가자 및 진행자 선택")
 

@@ -1,11 +1,18 @@
 import gspread
 import streamlit as st
 from datetime import datetime
+import logging
+from typing import List, Dict, Any, Optional
 
-SPREADSHEET_ID = "1HI0dwaA6HJV9g--lpOpprSO_UoFhFXUleFhI4ur2-44"
+from config import SPREADSHEET_ID, CACHE_TTL
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_gspread_client():
+    """Google Sheets 클라이언트 반환"""
     import json
     try:
         if "gcp_service_account" in st.secrets:
@@ -15,12 +22,17 @@ def get_gspread_client():
                 creds_dict = json.loads(secret_val)
             else:
                 creds_dict = dict(secret_val)
+            logger.info("Streamlit Cloud Secrets로 인증")
             return gspread.service_account_from_dict(creds_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Secrets 로드 실패, 로컬 파일 시도: {e}")
         
     # 로컬 환경 (credentials.json 파일 사용)
-    return gspread.service_account(filename="credentials.json")
+    try:
+        return gspread.service_account(filename="credentials.json")
+    except Exception as e:
+        logger.error(f"credentials.json 로드 실패: {e}")
+        raise
 
 @st.cache_resource
 def get_sheet():
@@ -40,164 +52,272 @@ def init_db():
 def clear_cache():
     st.cache_data.clear()
 
-@st.cache_data(ttl=60)
-def get_all_settings():
-    settings_sheet = get_worksheet("settings")
-    records = settings_sheet.get_all_records()
-    return records
+@st.cache_data(ttl=CACHE_TTL)
+def get_all_settings() -> List[Dict[str, str]]:
+    """설정 시트에서 모든 설정 반환"""
+    try:
+        settings_sheet = get_worksheet("settings")
+        records = settings_sheet.get_all_records()
+        return records
+    except Exception as e:
+        logger.error(f"설정 로드 실패: {e}")
+        return []
 
-def get_admin_password():
+def get_admin_password() -> str:
+    """관리자 비밀번호 반환"""
     records = get_all_settings()
     for row in records:
-        if row['key'] == 'admin_password':
-            return row['value']
+        if row.get('key') == 'admin_password':
+            return row.get('value', 'admin1234')
     return 'admin1234'
 
-def set_admin_password(new_password):
-    settings_sheet = get_worksheet("settings")
-    cell = settings_sheet.find("admin_password", in_column=1)
-    if cell:
-        settings_sheet.update_cell(cell.row, cell.col + 1, new_password)
-    clear_cache()
+def set_admin_password(new_password: str) -> bool:
+    """관리자 비밀번호 설정"""
+    try:
+        settings_sheet = get_worksheet("settings")
+        cell = settings_sheet.find("admin_password", in_column=1)
+        if cell:
+            settings_sheet.update_cell(cell.row, cell.col + 1, new_password)
+            clear_cache()
+            logger.info("관리자 비밀번호 변경 완료")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"비밀번호 설정 실패: {e}")
+        return False
 
-def _get_next_id(sheet):
-    records = sheet.get_all_records()
-    if not records:
+def _get_next_id(sheet) -> int:
+    """시트에서 다음 ID 생성"""
+    try:
+        records = sheet.get_all_records()
+        if not records:
+            return 1
+        ids = [int(r['id']) for r in records if str(r.get('id', '')).isdigit()]
+        return max(ids) + 1 if ids else 1
+    except Exception as e:
+        logger.error(f"ID 생성 실패: {e}")
         return 1
-    ids = [int(r['id']) for r in records if str(r['id']).isdigit()]
-    return max(ids) + 1 if ids else 1
 
-def add_user(riot_id, tag_line, birthdate, main_position='', sub_position=''):
-    users_sheet = get_worksheet("users")
-    next_id = _get_next_id(users_sheet)
-    users_sheet.append_row([
-        next_id, riot_id, f"'{tag_line}", f"'{birthdate}", "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0, main_position, sub_position
-    ], value_input_option='USER_ENTERED')
-    clear_cache()
+def add_user(riot_id: str, tag_line: str, birthdate: str, main_position: str = '', sub_position: str = '') -> bool:
+    """새 사용자 추가"""
+    try:
+        users_sheet = get_worksheet("users")
+        next_id = _get_next_id(users_sheet)
+        users_sheet.append_row([
+            next_id, riot_id, f"'{tag_line}", f"'{birthdate}", "PENDING", "Unranked", "Unranked", 0, -1, 0, 0, 
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0, main_position, sub_position
+        ], value_input_option='USER_ENTERED')
+        clear_cache()
+        logger.info(f"사용자 추가 완료: {riot_id}#{tag_line}")
+        return True
+    except Exception as e:
+        logger.error(f"사용자 추가 실패: {e}")
+        return False
 
-@st.cache_data(ttl=60)
-def get_all_users():
-    users_sheet = get_worksheet("users")
-    rows = users_sheet.get_all_values()
-    if not rows or len(rows) < 2:
+@st.cache_data(ttl=CACHE_TTL)
+def get_all_users() -> List[Dict[str, str]]:
+    """모든 사용자 조회"""
+    try:
+        users_sheet = get_worksheet("users")
+        rows = users_sheet.get_all_values()
+        if not rows or len(rows) < 2:
+            return []
+        headers = rows[0]
+        records = []
+        for row in rows[1:]:
+            padded_row = row + [''] * (len(headers) - len(row))
+            record = {h: (val[1:] if isinstance(val, str) and val.startswith("'") else val) 
+                      for h, val in zip(headers, padded_row)}
+            records.append(record)
+        return records
+    except Exception as e:
+        logger.error(f"사용자 조회 실패: {e}")
         return []
-    headers = rows[0]
-    records = []
-    for row in rows[1:]:
-        padded_row = row + [''] * (len(headers) - len(row))
-        record = {h: (val[1:] if isinstance(val, str) and val.startswith("'") else val) 
-                  for h, val in zip(headers, padded_row)}
-        records.append(record)
-    return records
 
-def get_pending_users():
+def get_pending_users() -> List[tuple]:
+    """승인 대기 중인 사용자 목록"""
     users = get_all_users()
     pending = []
     for u in users:
-        if u['status'] == 'PENDING':
+        if u.get('status') == 'PENDING':
             pending.append((u['id'], u['riot_id'], u['tag_line'], u['birthdate']))
     return pending
 
-def get_all_approved_users():
+def get_all_approved_users() -> List[tuple]:
+    """승인된 사용자 목록"""
     users = get_all_users()
     approved = []
     for u in users:
-        if u['status'] == 'APPROVED':
+        if u.get('status') == 'APPROVED':
             approved.append((
                 int(u['id']), u['riot_id'], u['tag_line'], u['solo_tier'], 
                 u['flex_tier'], int(u['power_score']), int(u['manual_score']), 
-                int(u['manual_stars']), int(u['is_admin']), int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0),
+                int(u['manual_stars']), int(u['is_admin']), 
+                int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0),
                 u.get('main_position', ''), u.get('sub_position', '')
             ))
     return approved
 
-def approve_user(user_id, solo_tier, flex_tier, power_score):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update(f"E{cell.row}:H{cell.row}", [["APPROVED", solo_tier, flex_tier, power_score]])
-        clear_cache()
+def approve_user(user_id: int, solo_tier: str, flex_tier: str, power_score: int) -> bool:
+    """사용자 승인"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update(f"E{cell.row}:H{cell.row}", [["APPROVED", solo_tier, flex_tier, power_score]])
+            clear_cache()
+            logger.info(f"사용자 승인 완료: ID {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"사용자 승인 실패: {e}")
+        return False
 
-def update_user_tier_info(user_id, solo_tier, flex_tier, power_score):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update(f"F{cell.row}:H{cell.row}", [[solo_tier, flex_tier, power_score]])
-        clear_cache()
+def update_user_tier_info(user_id: int, solo_tier: str, flex_tier: str, power_score: int) -> bool:
+    """사용자 티어 정보 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update(f"F{cell.row}:H{cell.row}", [[solo_tier, flex_tier, power_score]])
+            clear_cache()
+            logger.info(f"티어 정보 업데이트 완료: ID {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"티어 정보 업데이트 실패: {e}")
+        return False
 
-def batch_update_user_tiers(tier_updates):
-    users_sheet = get_worksheet("users")
-    users = get_all_users()
-    
-    updates = []
-    for idx, u in enumerate(users):
-        uid = int(u['id'])
-        if uid in tier_updates:
-            solo_tier, flex_tier, power_score = tier_updates[uid]
-            cell_row = idx + 2
-            updates.append({'range': f"F{cell_row}:H{cell_row}", 'values': [[solo_tier, flex_tier, power_score]]})
-            
-    if updates:
-        users_sheet.batch_update(updates)
-        clear_cache()
+def batch_update_user_tiers(tier_updates: Dict[int, tuple]) -> bool:
+    """여러 사용자의 티어 정보 일괄 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        users = get_all_users()
+        
+        updates = []
+        for idx, u in enumerate(users):
+            uid = int(u['id'])
+            if uid in tier_updates:
+                solo_tier, flex_tier, power_score = tier_updates[uid]
+                cell_row = idx + 2
+                updates.append({'range': f"F{cell_row}:H{cell_row}", 'values': [[solo_tier, flex_tier, power_score]]})
+                
+        if updates:
+            users_sheet.batch_update(updates)
+            clear_cache()
+            logger.info(f"일괄 티어 업데이트 완료: {len(updates)}명")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"일괄 티어 업데이트 실패: {e}")
+        return False
 
-def reject_user(user_id):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.delete_rows(cell.row)
-        clear_cache()
+def reject_user(user_id: int) -> bool:
+    """사용자 가입 거절 (삭제)"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.delete_rows(cell.row)
+            clear_cache()
+            logger.info(f"사용자 거절/삭제 완료: ID {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"사용자 거절 실패: {e}")
+        return False
 
-def update_manual_score(user_id, manual_score):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update_cell(cell.row, 9, manual_score)
-        clear_cache()
+def update_manual_score(user_id: int, manual_score: int) -> bool:
+    """수동 점수 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 9, manual_score)
+            clear_cache()
+            logger.info(f"수동 점수 업데이트 완료: ID {user_id} -> {manual_score}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"수동 점수 업데이트 실패: {e}")
+        return False
 
-def update_user_positions(user_id, main_pos, sub_pos):
-    users_sheet = get_worksheet("users")
-    rows = users_sheet.get_all_values()
-    headers = rows[0]
-    
-    col_main = headers.index('main_position') + 1 if 'main_position' in headers else 14
-    col_sub = headers.index('sub_position') + 1 if 'sub_position' in headers else 15
-    
-    if 'main_position' not in headers:
-        users_sheet.update_cell(1, 14, 'main_position')
-        col_main = 14
-    if 'sub_position' not in headers:
-        users_sheet.update_cell(1, 15, 'sub_position')
-        col_sub = 15
+def update_user_positions(user_id: int, main_pos: str, sub_pos: str) -> bool:
+    """사용자 포지션 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        rows = users_sheet.get_all_values()
+        headers = rows[0]
+        
+        col_main = headers.index('main_position') + 1 if 'main_position' in headers else 14
+        col_sub = headers.index('sub_position') + 1 if 'sub_position' in headers else 15
+        
+        if 'main_position' not in headers:
+            users_sheet.update_cell(1, 14, 'main_position')
+            col_main = 14
+        if 'sub_position' not in headers:
+            users_sheet.update_cell(1, 15, 'sub_position')
+            col_sub = 15
 
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update_cell(cell.row, col_main, main_pos)
-        users_sheet.update_cell(cell.row, col_sub, sub_pos)
-        clear_cache()
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, col_main, main_pos)
+            users_sheet.update_cell(cell.row, col_sub, sub_pos)
+            clear_cache()
+            logger.info(f"포지션 업데이트 완료: ID {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"포지션 업데이트 실패: {e}")
+        return False
 
-def update_manual_stars(user_id, stars):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update_cell(cell.row, 10, stars)
-        clear_cache()
+def update_manual_stars(user_id: int, stars: int) -> bool:
+    """수동 별 포인트 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 10, stars)
+            clear_cache()
+            logger.info(f"수동 별 포인트 업데이트 완료: ID {user_id} -> {stars}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"수동 별 포인트 업데이트 실패: {e}")
+        return False
 
-def update_admin_role(user_id, is_admin):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update_cell(cell.row, 11, is_admin)
-        clear_cache()
+def update_admin_role(user_id: int, is_admin: int) -> bool:
+    """관리자 권한 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 11, is_admin)
+            clear_cache()
+            logger.info(f"관리자 권한 업데이트 완료: ID {user_id} -> {is_admin}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"관리자 권한 업데이트 실패: {e}")
+        return False
 
-def kick_user(user_id):
-    users_sheet = get_worksheet("users")
-    cell = users_sheet.find(str(user_id), in_column=1)
-    if cell:
-        users_sheet.update_cell(cell.row, 5, 'KICKED')
-        clear_cache()
+def kick_user(user_id: int) -> bool:
+    """사용자 강퇴"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 5, 'KICKED')
+            clear_cache()
+            logger.info(f"사용자 강퇴 완료: ID {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"사용자 강퇴 실패: {e}")
+        return False
 
-def delete_all_history():
+def delete_all_history() -> bool:
+    """모든 내전 이력 삭제"""
     try:
         mp_sheet = get_worksheet("match_players")
         matches_sheet = get_worksheet("matches")
@@ -219,94 +339,109 @@ def delete_all_history():
         if updates:
             users_sheet.batch_update(updates)
             
+        clear_cache()
+        logger.info("모든 내전 이력 삭제 완료")
+        return True
     except Exception as e:
-        print("Error resetting history", e)
-    clear_cache()
+        logger.error(f"내전 이력 삭제 실패: {e}")
+        return False
 
-def delete_match(match_id):
-    matches_sheet = get_worksheet("matches")
-    mp_sheet = get_worksheet("match_players")
-    
-    matches = _get_all_matches_raw()
-    match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
-    mps = _get_all_match_players_raw()
-    
-    if match_to_delete and match_to_delete['match_type'] == 'NORMAL' and match_to_delete['winning_team'] not in ['아직 모름', '']:
-        winning_team = match_to_delete['winning_team']
-        users = get_all_users()
-        user_dict = {str(u['id']): u for u in users}
+def delete_match(match_id: int) -> bool:
+    """특정 내전 삭제"""
+    try:
+        matches_sheet = get_worksheet("matches")
+        mp_sheet = get_worksheet("match_players")
+        users_sheet = get_worksheet("users")
         
-        updates = []
-        for mp in mps:
+        matches = _get_all_matches_raw()
+        match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
+        mps = _get_all_match_players_raw()
+        
+        if match_to_delete and match_to_delete.get('match_type') == 'NORMAL' and match_to_delete.get('winning_team') not in ['아직 모름', '']:
+            winning_team = match_to_delete['winning_team']
+            users = get_all_users()
+            user_dict = {str(u['id']): u for u in users}
+            
+            updates = []
+            for mp in mps:
+                if str(mp['match_id']) == str(match_id):
+                    uid = str(mp['user_id'])
+                    if uid in user_dict:
+                        u = user_dict[uid]
+                        from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
+
+                        base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+                        effective_tier = calculate_clan_tier(base_score)
+                        current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
+                        
+                        if mp['team_name'] == winning_team:
+                            bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
+                            current_bonus -= bonus_change # rollback win
+                        else:
+                            bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
+                            current_bonus += bonus_change # rollback loss
+                            
+                        # Cap at -base_score to prevent final score < 0
+                        current_bonus = max(-base_score, current_bonus)
+                            
+                        cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
+                        updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
+            if updates:
+                users_sheet.batch_update(updates)
+
+        # Delete match_players rows
+        rows_to_delete = []
+        for i, mp in enumerate(mps):
             if str(mp['match_id']) == str(match_id):
-                uid = str(mp['user_id'])
-                if uid in user_dict:
-                    u = user_dict[uid]
-                    import sys, os
-                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-                    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-
-                    base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-                    effective_tier = calculate_clan_tier(base_score)
-                    current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
-                    
-                    if mp['team_name'] == winning_team:
-                        bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
-                        current_bonus -= bonus_change # rollback win
-                    else:
-                        bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
-                        current_bonus += bonus_change # rollback loss
-                        
-                    # Cap at -base_score to prevent final score < 0
-                    current_bonus = max(-base_score, current_bonus)
-                        
-                    cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
-                    updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
-        if updates:
-            users_sheet.batch_update(updates)
-
-    # Delete match_players rows
-    rows_to_delete = []
-    for i, mp in enumerate(mps):
-        if str(mp['match_id']) == str(match_id):
-            rows_to_delete.append(i + 2) 
-    
-    for r in sorted(rows_to_delete, reverse=True):
-        mp_sheet.delete_rows(r)
-
-    # Delete match row
-    cell = matches_sheet.find(str(match_id), in_column=1)
-    if cell:
-        matches_sheet.delete_rows(cell.row)
+                rows_to_delete.append(i + 2) 
         
-    clear_cache()
+        for r in sorted(rows_to_delete, reverse=True):
+            mp_sheet.delete_rows(r)
 
-@st.cache_data(ttl=60)
-def _get_all_matches_raw():
+        # Delete match row
+        cell = matches_sheet.find(str(match_id), in_column=1)
+        if cell:
+            matches_sheet.delete_rows(cell.row)
+            
+        clear_cache()
+        logger.info(f"내전 삭제 완료: Match ID {match_id}")
+        return True
+    except Exception as e:
+        logger.error(f"내전 삭제 실패: {e}")
+        return False
+
+@st.cache_data(ttl=CACHE_TTL)
+def _get_all_matches_raw() -> List[Dict[str, str]]:
+    """모든 매치 데이터 원본 조회"""
     try:
         return get_worksheet("matches").get_all_records()
-    except Exception:
+    except Exception as e:
+        logger.error(f"매치 데이터 조회 실패: {e}")
         return []
 
-@st.cache_data(ttl=60)
-def _get_all_match_players_raw():
+@st.cache_data(ttl=CACHE_TTL)
+def _get_all_match_players_raw() -> List[Dict[str, str]]:
+    """모든 매치 플레이어 데이터 원본 조회"""
     try:
         return get_worksheet("match_players").get_all_records()
-    except Exception:
+    except Exception as e:
+        logger.error(f"매치 플레이어 데이터 조회 실패: {e}")
         return []
 
-@st.cache_data(ttl=60)
-def get_matches():
+@st.cache_data(ttl=CACHE_TTL)
+def get_matches() -> List[tuple]:
+    """매치 목록 조회 (날짜순 정렬)"""
     records = _get_all_matches_raw()
     try:
-        records = sorted(records, key=lambda x: str(x['match_date']), reverse=True)
-    except:
+        records = sorted(records, key=lambda x: str(x.get('match_date', '')), reverse=True)
+    except Exception:
         pass
     return [(int(r['id']), r['match_type'], r['host'], r['match_date'], r['winning_team']) for r in records]
 
-@st.cache_data(ttl=60)
-def get_match_players(match_id):
-    mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
+@st.cache_data(ttl=CACHE_TTL)
+def get_match_players(match_id: int) -> List[tuple]:
+    """특정 매치의 참가자 목록 조회"""
+    mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
     users = {str(u['id']): u for u in get_all_users()}
     
     result = []
@@ -317,61 +452,76 @@ def get_match_players(match_id):
             result.append((
                 mp['team_name'], mp['role'], u['riot_id'], u['tag_line'], 
                 int(u['power_score']), int(u['manual_score']), int(mp['points_spent']), 
-                int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+                int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
             ))
     return result
 
-def add_match(match_type, host, winning_team, players_data):
-    matches_sheet = get_worksheet("matches")
-    mp_sheet = get_worksheet("match_players")
-    
-    next_match_id = _get_next_id(matches_sheet)
-    matches_sheet.append_row([
-        next_match_id, match_type, host, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), winning_team
-    ])
-    
-    next_mp_id = _get_next_id(mp_sheet)
-    mp_rows = []
-    for i, p in enumerate(players_data):
-        mp_rows.append([next_mp_id + i, next_match_id, p[0], p[1], p[2], p[3]])
+def add_match(match_type: str, host: str, winning_team: str, players_data: List[tuple]) -> bool:
+    """새 매치 추가"""
+    try:
+        matches_sheet = get_worksheet("matches")
+        mp_sheet = get_worksheet("match_players")
         
-    if mp_rows:
-        mp_sheet.append_rows(mp_rows)
+        next_match_id = _get_next_id(matches_sheet)
+        matches_sheet.append_row([
+            next_match_id, match_type, host, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), winning_team
+        ])
         
-    clear_cache()
-    
-    if match_type == "NORMAL" and winning_team not in ["아직 모름", ""]:
-        _apply_match_bonus(players_data, winning_team)
-
-def update_match_winner(match_id, new_winning_team):
-    matches_sheet = get_worksheet("matches")
-    mp_sheet = get_worksheet("match_players")
-    
-    matches = _get_all_matches_raw()
-    match = next((m for m in matches if str(m['id']) == str(match_id)), None)
-    
-    if match:
-        old_winning_team = match['winning_team']
-        
-        if match['match_type'] == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
-            mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
-            players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-            _rollback_match_bonus(players_data_rollback, old_winning_team)
+        next_mp_id = _get_next_id(mp_sheet)
+        mp_rows = []
+        for i, p in enumerate(players_data):
+            mp_rows.append([next_mp_id + i, next_match_id, p[0], p[1], p[2], p[3]])
             
-        cell = matches_sheet.find(str(match_id), in_column=1)
-        if cell:
-            matches_sheet.update_cell(cell.row, 5, new_winning_team)
-            
-        if match['match_type'] == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
-            mps = [mp for mp in _get_all_match_players_raw() if str(mp['match_id']) == str(match_id)]
-            players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-            _apply_match_bonus(players_data, new_winning_team)
+        if mp_rows:
+            mp_sheet.append_rows(mp_rows)
             
         clear_cache()
+        
+        if match_type == "NORMAL" and winning_team not in ["아직 모름", ""]:
+            _apply_match_bonus(players_data, winning_team)
+        
+        logger.info(f"매치 추가 완료: {match_type} - {host}")
+        return True
+    except Exception as e:
+        logger.error(f"매치 추가 실패: {e}")
+        return False
 
-def _apply_match_bonus(players_data, winning_team):
-    import sys, os
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+def update_match_winner(match_id: int, new_winning_team: str) -> bool:
+    """매치 승리팀 업데이트"""
+    try:
+        matches_sheet = get_worksheet("matches")
+        mp_sheet = get_worksheet("match_players")
+        
+        matches = _get_all_matches_raw()
+        match = next((m for m in matches if str(m['id']) == str(match_id)), None)
+        
+        if match:
+            old_winning_team = match.get('winning_team', '')
+            
+            if match.get('match_type') == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
+                mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
+                players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
+                _rollback_match_bonus(players_data_rollback, old_winning_team)
+                
+            cell = matches_sheet.find(str(match_id), in_column=1)
+            if cell:
+                matches_sheet.update_cell(cell.row, 5, new_winning_team)
+                
+            if match.get('match_type') == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
+                mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
+                players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
+                _apply_match_bonus(players_data, new_winning_team)
+                
+            clear_cache()
+            logger.info(f"매치 승리팀 업데이트 완료: Match {match_id} -> {new_winning_team}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"매치 승리팀 업데이트 실패: {e}")
+        return False
+
+def _apply_match_bonus(players_data: List[tuple], winning_team: str) -> None:
+    """매치 보너스 적용 (승리팀/패배팀 MMR 증감)"""
     from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 
     users_sheet = get_worksheet("users")
@@ -388,7 +538,7 @@ def _apply_match_bonus(players_data, winning_team):
             
             effective_tier = calculate_clan_tier(base_score)
             
-            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
             
             if team_name == winning_team:
                 bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
@@ -404,10 +554,10 @@ def _apply_match_bonus(players_data, winning_team):
                 
     if updates:
         users_sheet.batch_update(updates)
+        logger.info(f"매치 보너스 적용 완료: {len(updates)}명")
 
-def _rollback_match_bonus(players_data, winning_team):
-    import sys, os
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+def _rollback_match_bonus(players_data: List[tuple], winning_team: str) -> None:
+    """매치 보너스 롤백 (승리팀 변경 시 이전 보너스 취소)"""
     from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 
     users_sheet = get_worksheet("users")
@@ -424,7 +574,7 @@ def _rollback_match_bonus(players_data, winning_team):
             
             effective_tier = calculate_clan_tier(base_score)
             
-            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus')) != '' else 0)
+            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
             
             if team_name == winning_team:
                 bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
@@ -440,19 +590,21 @@ def _rollback_match_bonus(players_data, winning_team):
                 
     if updates:
         users_sheet.batch_update(updates)
+        logger.info(f"매치 보너스 롤백 완료: {len(updates)}명")
 
-@st.cache_data(ttl=60)
-def get_user_stats():
+@st.cache_data(ttl=CACHE_TTL)
+def get_user_stats() -> Dict[int, Dict[str, int]]:
+    """사용자별 내전 통계 조회"""
     users = get_all_users()
     matches = _get_all_matches_raw()
     mp_sheet = _get_all_match_players_raw()
     
     stats = {}
     for u in users:
-        if u['status'] == 'APPROVED':
+        if u.get('status') == 'APPROVED':
             stats[int(u['id'])] = {'total': 0, 'wins': 0, 'win_rate': 0}
             
-    valid_matches = {str(m['id']): m['winning_team'] for m in matches if m['match_type'] in ['NORMAL', 'AUCTION'] and m['winning_team'] not in ['', '아직 모름']}
+    valid_matches = {str(m['id']): m['winning_team'] for m in matches if m.get('match_type') in ['NORMAL', 'AUCTION'] and m.get('winning_team') not in ['', '아직 모름']}
     
     for mp in mp_sheet:
         uid = int(mp['user_id'])
@@ -469,8 +621,9 @@ def get_user_stats():
         
     return stats
 
-@st.cache_data(ttl=60)
-def get_auction_points_by_user():
+@st.cache_data(ttl=CACHE_TTL)
+def get_auction_points_by_user() -> Dict[int, int]:
+    """사용자별 경매 내전 포인트 조회"""
     matches = _get_all_matches_raw()
     mps = _get_all_match_players_raw()
     
@@ -479,8 +632,8 @@ def get_auction_points_by_user():
     
     points = {}
     for match in matches:
-        if match['match_type'] == 'AUCTION' and match['winning_team'] not in ["", "아직 모름"]:
-            all_match_mps = [mp for mp in mps if str(mp['match_id']) == str(match['id'])]
+        if match.get('match_type') == 'AUCTION' and match.get('winning_team') not in ["", "아직 모름"]:
+            all_match_mps = [mp for mp in mps if str(mp.get('match_id')) == str(match['id'])]
             num_players = len(all_match_mps)
             
             points_to_award = 0
@@ -507,4 +660,3 @@ def get_auction_points_by_user():
                     
     return points
 
-init_db()

@@ -6,8 +6,13 @@ import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
+from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
+from utils.helpers import unpack_user_data, calculate_user_scores, format_user_for_selectbox, calculate_auction_points
+from utils.tournament_manager import create_session
 
 from utils.ui import set_background
+from config import MIN_PLAYERS_REQUIRED, AUCTION_TEAM_OPTIONS
+
 st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
 if not st.session_state.get("auction_started", False):
     set_background("images (3).jpg")
@@ -37,50 +42,16 @@ if st.session_state.get("auction_saved_toast", False):
 approved_users = database.get_all_approved_users()
 auction_points = database.get_auction_points_by_user()
 
-if not approved_users or len(approved_users) < 10:
-    st.warning("승인된 회원이 부족하여 경매 내전을 진행할 수 없습니다.")
+if not approved_users or len(approved_users) < MIN_PLAYERS_REQUIRED:
+    st.warning(f"승인된 회원이 {MIN_PLAYERS_REQUIRED}명 이상이어야 경매 내전을 진행할 수 있습니다.")
     st.stop()
 
-from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
-from utils.tournament_manager import create_session
-
-# Helpers
+# Helpers using helpers.py
 def get_auction_points(tier_score):
-    if tier_score >= 700: return 690
-    elif tier_score >= 600: return 790
-    elif tier_score >= 550: return 840
-    elif tier_score >= 480: return 910
-    elif tier_score >= 450: return 940
-    elif tier_score >= 420: return 970
-    elif tier_score >= 390: return 1000
-    elif tier_score >= 340: return 1050
-    elif tier_score >= 320: return 1070
-    elif tier_score >= 300: return 1090
-    elif tier_score >= 280: return 1110
-    elif tier_score >= 230: return 1160
-    elif tier_score >= 220: return 1170
-    elif tier_score >= 210: return 1180
-    elif tier_score >= 200: return 1190
-    elif tier_score >= 150: return 1240
-    elif tier_score >= 140: return 1250
-    elif tier_score >= 130: return 1260
-    elif tier_score >= 120: return 1270
-    elif tier_score >= 90: return 1300
-    elif tier_score >= 80: return 1310
-    elif tier_score >= 70: return 1320
-    else: return 1330
+    return calculate_auction_points(tier_score)
 
 def format_user(user):
-    if len(user) == 12:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
-    else:
-        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-        main_pos, sub_pos = "", ""
-    base_score = manual_score if manual_score != -1 else power_score
-    final_score = base_score + match_bonus
-    clan_tier = calculate_clan_tier(base_score, final_score)
-    abbr_tier = abbreviate_tier(clan_tier)
-    return f"[{abbr_tier}] {riot_id}#{tag_line} (스코어: {final_score})", user_id, final_score, abbr_tier, main_pos, sub_pos, manual_stars
+    return format_user_for_selectbox(user)
 
 @st.cache_data(ttl=60)
 def get_formatted_users(users):
@@ -133,7 +104,7 @@ if not st.session_state.auction_started:
         if st.button("팀 수 확정", use_container_width=True):
             st.session_state.num_teams_setup = num_teams_input
             
-    num_teams = st.session_state.get("num_teams_setup", 4)
+    num_teams = st.session_state.get("num_teams_setup", AUCTION_TEAM_OPTIONS[0])
 
     with st.form("auction_setup"):
         # Select team leaders from the participants

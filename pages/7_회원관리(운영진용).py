@@ -6,6 +6,7 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier, abbreviate_tier
+from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols
 
 from utils.ui import set_background
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
@@ -29,12 +30,9 @@ if not st.session_state.admin_authenticated:
         approved_users = database.get_all_approved_users()
         is_valid_admin = False
         for u in approved_users:
-            if len(u) == 12:
-                u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus, main_pos, sub_pos = u
-            else:
-                u_id, r_id, t_line, s_tier, f_tier, p_score, m_score, m_stars, is_admin, m_bonus = u
-            if is_admin == 1:
-                full_name = f"{r_id}#{t_line}".lower()
+            user_dict = unpack_user_data(u)
+            if user_dict['is_admin'] == 1:
+                full_name = f"{user_dict['riot_id']}#{user_dict['tag_line']}".lower()
                 if admin_id_input.strip().lower() == full_name:
                     is_valid_admin = True
                     break
@@ -91,9 +89,10 @@ if st.button("🔄 회원 전체 티어 최신화"):
     tier_updates = {}
     total = len(approved_users_for_update)
     for i, u in enumerate(approved_users_for_update):
-        user_id = int(u[0])
-        riot_id = u[1]
-        tag_line = u[2]
+        user_dict = unpack_user_data(u)
+        user_id = int(user_dict['user_id'])
+        riot_id = user_dict['riot_id']
+        tag_line = user_dict['tag_line']
         
         solo_tier, flex_tier, power_score = fetch_tier_data(riot_id, tag_line)
         tier_updates[user_id] = (solo_tier, flex_tier, power_score)
@@ -159,50 +158,37 @@ if not approved_users:
 else:
     data = []
     for user in approved_users:
-        if len(user) == 12:
-            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
-        else:
-            user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-            main_pos, sub_pos = "", ""
-            
-        full_id = f"{riot_id}#{tag_line}"
+        user_dict = unpack_user_data(user)
+        
+        full_id = f"{user_dict['riot_id']}#{user_dict['tag_line']}"
         if search_query != "전체" and search_query != full_id:
             continue
             
-        base_score = manual_score if manual_score != -1 else power_score
-        final_score = base_score + match_bonus
-        clan_tier = calculate_clan_tier(base_score, final_score)
+        base_score, final_score, clan_tier = calculate_user_scores(user_dict)
         
         # Calculate symbols for 내전 보상
-        total_points = auction_points.get(user_id, 0) + manual_stars
-        trophies = total_points // 25
-        medals = (total_points % 25) // 5
-        stars = total_points % 5
-        symbol_str = ""
-        if trophies > 0: symbol_str += "🏆" * trophies
-        if medals > 0: symbol_str += "🎖️" * medals
-        if stars > 0: symbol_str += "⭐" * stars
-        if not symbol_str: symbol_str = "-"
+        total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
+        symbol_str = calculate_trophy_symbols(total_points)
         
-        stats = user_stats.get(user_id, {'total': 0, 'wins': 0, 'win_rate': 0})
+        stats = user_stats.get(user_dict['user_id'], {'total': 0, 'wins': 0, 'win_rate': 0})
         
         data.append({
-            '아이디': user_id,
-            '닉네임': riot_id,
-            '태그라인': tag_line,
+            '아이디': user_dict['user_id'],
+            '닉네임': user_dict['riot_id'],
+            '태그라인': user_dict['tag_line'],
             '클랜 티어': clan_tier,
             '내전 보상': symbol_str,
-            '주 포지션': main_pos,
-            '부 포지션': sub_pos,
+            '주 포지션': user_dict['main_pos'],
+            '부 포지션': user_dict['sub_pos'],
             '내전 참가 판수': stats['total'],
             '내전 승률(%)': stats['win_rate'],
-            '솔로랭크': abbreviate_tier(solo_tier),
-            '자유랭크': abbreviate_tier(flex_tier),
-            '기본 파워스코어': power_score,
-            '수기 점수': manual_score,
-            '수기 기호 포인트': manual_stars,
-            '운영진 여부': is_admin,
-            '내전스코어 증감': match_bonus,
+            '솔로랭크': abbreviate_tier(user_dict['solo_tier']),
+            '자유랭크': abbreviate_tier(user_dict['flex_tier']),
+            '기본 파워스코어': user_dict['power_score'],
+            '수기 점수': user_dict['manual_score'],
+            '수기 기호 포인트': user_dict['manual_stars'],
+            '운영진 여부': user_dict['is_admin'],
+            '내전스코어 증감': user_dict['match_bonus'],
             '최종 파워스코어': final_score
         })
         
