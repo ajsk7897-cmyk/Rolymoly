@@ -209,18 +209,22 @@ else:
     /* Expander text center alignment */
     [data-testid="stExpander"] details summary {
         display: flex !important;
-        justify-content: center !important;
+        align-items: center !important;
     }
-    [data-testid="stExpander"] details summary > div {
-        flex-grow: 1 !important;
+    [data-testid="stExpander"] details summary > * {
+        flex: 1 !important;
+        text-align: center !important;
         display: flex !important;
         justify-content: center !important;
     }
+    [data-testid="stExpander"] details summary svg {
+        flex: 0 !important;
+    }
     [data-testid="stExpander"] details summary p {
-        text-align: center !important;
         width: 100% !important;
+        text-align: center !important;
         font-weight: bold !important;
-        margin: 0 !important;
+        display: inline-block !important;
     }
     </style>
     """, unsafe_allow_html=True)
