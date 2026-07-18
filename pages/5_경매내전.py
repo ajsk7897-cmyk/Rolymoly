@@ -217,7 +217,7 @@ else:
                 i = row_start + col_idx
                 with cols[col_idx]:
                     with st.container(border=True):
-                        st.markdown(f"<h3 style='font-size: 50%;'>{team['name']}</h3>", unsafe_allow_html=True)
+                        st.markdown(f"#### {team['name']}")
                         st.markdown(f"**남은 포인트: {team['points']}**")
                         with st.expander("⚙️ 포인트 수정"):
                             new_pts = st.number_input("포인트", value=team['points'], step=10, key=f"pts_{i}")
@@ -228,9 +228,9 @@ else:
                         for m in team['members']:
                             name = user_dict[m['user_id']][0]
                             if m['role'] == 'Leader':
-                                st.markdown(f"👑 <span style='font-size: 70%; font-weight: bold;'>{name}</span>", unsafe_allow_html=True)
+                                st.markdown(f"👑 **{name}**")
                             else:
-                                st.write(f"- {name} ({m['points_spent']}p)")
+                                st.markdown(f"- {name} ({m['points_spent']}p)")
                 
     st.divider()
     
