@@ -190,10 +190,11 @@ else:
     st.markdown("""
     <style>
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: rgba(255, 255, 255, 0.85) !important;
+        background-color: #f2f4f7 !important;
         border-radius: 12px !important;
-        padding: 5px !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+        padding: 10px !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid #dcdcdc !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] h1,
     [data-testid="stVerticalBlockBorderWrapper"] h2,
@@ -218,19 +219,27 @@ else:
                 with cols[col_idx]:
                     with st.container(border=True):
                         st.markdown(f"#### {team['name']}")
-                        st.markdown(f"**남은 포인트: {team['points']}**")
-                        with st.expander("⚙️ 포인트 수정"):
-                            new_pts = st.number_input("포인트", value=team['points'], step=10, key=f"pts_{i}")
-                            if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
-                                st.session_state.teams[i]['points'] = new_pts
-                                st.rerun()
-                        st.divider()
-                        for m in team['members']:
+                        c1, c2 = st.columns([1, 1], vertical_alignment="center")
+                        with c1:
+                            st.markdown(f"**잔여 P: {team['points']}**")
+                        with c2:
+                            with st.expander("⚙️ 수정"):
+                                new_pts = st.number_input("P", value=team['points'], step=10, key=f"pts_{i}", label_visibility="collapsed")
+                                if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
+                                    st.session_state.teams[i]['points'] = new_pts
+                                    st.rerun()
+                                    
+                        st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 2px solid #bbb;'>", unsafe_allow_html=True)
+                        
+                        for m_idx, m in enumerate(team['members']):
                             name = user_dict[m['user_id']][0]
                             if m['role'] == 'Leader':
-                                st.markdown(f"👑 **{name}**")
+                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>👑 **{name}**</div>", unsafe_allow_html=True)
                             else:
-                                st.markdown(f"- {name} ({m['points_spent']}p)")
+                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>- {name} ({m['points_spent']}p)</div>", unsafe_allow_html=True)
+                                
+                            if m_idx < len(team['members']) - 1:
+                                st.markdown("<hr style='margin: 0; border: 0; border-top: 1px solid #ddd;'>", unsafe_allow_html=True)
                 
     st.divider()
     
