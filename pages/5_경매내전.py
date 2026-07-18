@@ -226,6 +226,10 @@ else:
         font-weight: bold !important;
         display: inline-block !important;
     }
+    /* Button text line break support */
+    [data-testid="stButton"] p {
+        white-space: pre-wrap !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
