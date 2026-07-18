@@ -275,11 +275,17 @@ else:
         table_data = []
         for uid in st.session_state.remaining_pool:
             user = user_dict[uid]
-            power_score = auction_points.get(user[1], 0) + user[6]
+            
+            # user[0] is formatted as "[D1] Riot#TAG (스코어: 1100)"
+            # Extract just the raw ID "Riot#TAG"
+            raw_id = user[0]
+            if "] " in raw_id and " (" in raw_id:
+                raw_id = raw_id.split("] ")[1].split(" (")[0]
+                
             table_data.append({
-                "아이디": user[0],
+                "아이디": raw_id,
                 "클랜티어": user[3],
-                "파워스코어": power_score,
+                "파워스코어": user[2],
                 "주포지션": user[4],
                 "부포지션": user[5]
             })
