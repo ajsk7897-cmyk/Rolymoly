@@ -324,7 +324,7 @@ else:
                         t_idx = row_start + col_idx
                         team = st.session_state.teams[t_idx]
                         with cols_team[col_idx]:
-                            if st.button(f"{team['name']} ({team['points']}p, {len(team['members'])}명)", key=f"bid_team_{t_idx}", use_container_width=True):
+                            if st.button(f"{team['name']}\n({team['points']}p, {len(team['members'])}명)", key=f"bid_team_{t_idx}", use_container_width=True):
                                 if len(team['members']) >= 5:
                                     st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다.")
                                 elif team['points'] < bid_points:
@@ -358,7 +358,7 @@ else:
                 cols_skip = st.columns(len(available_teams), vertical_alignment="bottom")
                 for t_idx, target_team in enumerate(available_teams):
                     with cols_skip[t_idx]:
-                        if st.button(f"{target_team['name']} ({target_team['points']}p, {len(target_team['members'])}명)", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
+                        if st.button(f"{target_team['name']}\n({target_team['points']}p, {len(target_team['members'])}명)", key=f"skip_{idx}_team_{target_team['id']}", use_container_width=True):
                             real_idx = st.session_state.teams.index(target_team)
                             if st.session_state.teams[real_idx]['points'] < bid_points:
                                 st.error("팀의 남은 포인트가 부족합니다.")
