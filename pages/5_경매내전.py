@@ -207,10 +207,20 @@ else:
         color: #000000 !important;
     }
     /* Expander text center alignment */
+    [data-testid="stExpander"] details summary {
+        display: flex !important;
+        justify-content: center !important;
+    }
+    [data-testid="stExpander"] details summary > div {
+        flex-grow: 1 !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
     [data-testid="stExpander"] details summary p {
-        width: 100%;
-        text-align: center;
-        font-weight: bold;
+        text-align: center !important;
+        width: 100% !important;
+        font-weight: bold !important;
+        margin: 0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
