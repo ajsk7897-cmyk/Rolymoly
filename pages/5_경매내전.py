@@ -270,14 +270,42 @@ else:
     st.divider()
     
     st.markdown(f"### 📋 잔여 경매 매물 목록 ({len(st.session_state.remaining_pool)}명)")
-    with st.container(height=150):
-        if st.session_state.remaining_pool:
-            pool_texts = []
+    if st.session_state.remaining_pool:
+        with st.container(height=250, border=True):
+            positions = ['탑', '정글', '미드', '원딜', '서폿']
+            grouped = {p: [] for p in positions}
+            others = []
+            
             for uid in st.session_state.remaining_pool:
-                pool_texts.append(f"{user_dict[uid][0]} [{user_dict[uid][4]}/{user_dict[uid][5]}]")
-            st.markdown(" • ".join(pool_texts))
-        else:
-            st.write("남은 매물이 없습니다.")
+                user = user_dict[uid]
+                main_pos = user[4]
+                sub_pos = user[5]
+                
+                text = f"<span style='font-size:0.85rem;'>{user[0]} <span style='color:#666;'>({sub_pos})</span></span>"
+                
+                placed = False
+                for p in positions:
+                    if p in main_pos:
+                        grouped[p].append(text)
+                        placed = True
+                        break
+                if not placed:
+                    others.append(f"<span style='font-size:0.85rem;'>{user[0]} <span style='color:#666;'>({main_pos}/{sub_pos})</span></span>")
+                    
+            cols = st.columns(5)
+            for i, p in enumerate(positions):
+                with cols[i]:
+                    st.markdown(f"<div style='font-weight:bold; color:#1f77b4; border-bottom:1px solid #ddd; padding-bottom:3px; margin-bottom:5px;'>{p} <span style='color:#e74c3c;'>{len(grouped[p])}</span></div>", unsafe_allow_html=True)
+                    if grouped[p]:
+                        st.markdown("<br>".join(grouped[p]), unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span style='color:#ccc; font-size:0.8rem;'>-</span>", unsafe_allow_html=True)
+            
+            if others:
+                st.markdown(f"<div style='font-weight:bold; color:#1f77b4; border-bottom:1px solid #ddd; padding-bottom:3px; margin-top:15px; margin-bottom:5px;'>기타 <span style='color:#e74c3c;'>{len(others)}</span></div>", unsafe_allow_html=True)
+                st.markdown("<br>".join(others), unsafe_allow_html=True)
+    else:
+        st.info("남은 매물이 없습니다.")
             
     st.divider()
     
