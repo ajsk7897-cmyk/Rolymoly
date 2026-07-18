@@ -42,7 +42,8 @@ if ongoing_sessions:
         if s["format"] == "LEAGUE":
             fmt_str = "풀리그 (모든 팀 상호 대전)"
         elif s["format"] == "GROUP_STAGE":
-            fmt_str = "조별리그 (4팀 2조, 조 1위 결승)"
+            num_per_group = len(s.get("teams", [])) // 2 if s.get("teams") else 4
+            fmt_str = f"조별리그 ({num_per_group}팀 2조, 조 1위 결승)"
         else:
             fmt_str = "토너먼트 (승자 진출)"
         s_date = datetime.fromtimestamp(int(s["session_id"])).strftime("%y년 %m월 %d일 %H:%M")

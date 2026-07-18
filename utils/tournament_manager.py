@@ -95,8 +95,9 @@ def create_session(host_name, teams, players_data, match_format):
         session["rounds"] = rounds
         
     elif match_format == "GROUP_STAGE":
-        group_A_teams = team_names[:4]
-        group_B_teams = team_names[4:]
+        half = len(team_names) // 2
+        group_A_teams = team_names[:half]
+        group_B_teams = team_names[half:]
         
         matches = []
         match_id = 1
