@@ -206,6 +206,12 @@ else:
     [data-testid="stVerticalBlockBorderWrapper"] li {
         color: #000000 !important;
     }
+    /* Expander text center alignment */
+    [data-testid="stExpander"] details summary p {
+        width: 100%;
+        text-align: center;
+        font-weight: bold;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -391,7 +397,7 @@ else:
                     
                     new_pts = st.number_input("새로운 소모 포인트", min_value=0, max_value=1000, value=selected_m['points_spent'], step=10, key="edit_pts")
                     
-                if st.button("배정 수정 적용", type="primary"):
+                if st.button("배정 수정 적용", type="primary", use_container_width=True):
                     old_t_idx = selected_m['team_idx']
                     m_idx = selected_m['member_idx']
                     old_pts = selected_m['points_spent']
