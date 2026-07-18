@@ -257,10 +257,11 @@ else:
                         
                         for m_idx, m in enumerate(team['members']):
                             name = user_dict[m['user_id']][0]
+                            main_pos = user_dict[m['user_id']][4]
                             if m['role'] == 'Leader':
-                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>👑 **{name}**</div>", unsafe_allow_html=True)
+                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>👑 **{name}** [{main_pos}]</div>", unsafe_allow_html=True)
                             else:
-                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>- {name} ({m['points_spent']}p)</div>", unsafe_allow_html=True)
+                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>- {name} [{main_pos}] ({m['points_spent']}p)</div>", unsafe_allow_html=True)
                                 
                             if m_idx < len(team['members']) - 1:
                                 st.markdown("<hr style='margin: 0; border: 0; border-top: 1px solid #ddd;'>", unsafe_allow_html=True)
