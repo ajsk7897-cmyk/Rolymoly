@@ -302,20 +302,6 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-    col3, col4 = st.columns(2, vertical_alignment="top")
-            
-    with col3:
-        with st.container(border=True):
-            st.markdown("#### 🔹 강제 탈퇴")
-            target_id_kick = st.selectbox("회원 선택 (강퇴)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="kick_select")
-            st.markdown("<br>", unsafe_allow_html=True) # 줄 맞춤용 공백
-            if st.button("강제 탈퇴", type="primary", key="btn_kick", use_container_width=True):
-                user_id = int(target_id_kick.split(" - ")[0])
-                database.kick_user(user_id)
-                st.session_state.toast_msg = ("탈퇴 처리되었습니다.", "⚠️")
-                st.rerun()
-
-    with col4:
         with st.container(border=True):
             st.markdown("#### 🛡️ 운영진 권한 설정")
             target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="admin_select")
@@ -328,6 +314,19 @@ else:
                 val = 1 if admin_action == "운영진 (관리자)" else 0
                 database.update_admin_role(current_user_id, val)
                 st.session_state.toast_msg = ("권한이 변경되었습니다.", "✅")
+                st.rerun()
+
+    col3, col4 = st.columns(2, vertical_alignment="top")
+            
+    with col3:
+        with st.container(border=True):
+            st.markdown("#### 🔹 강제 탈퇴")
+            target_id_kick = st.selectbox("회원 선택 (강퇴)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="kick_select")
+            st.markdown("<br>", unsafe_allow_html=True) # 줄 맞춤용 공백
+            if st.button("강제 탈퇴", type="primary", key="btn_kick", use_container_width=True):
+                user_id = int(target_id_kick.split(" - ")[0])
+                database.kick_user(user_id)
+                st.session_state.toast_msg = ("탈퇴 처리되었습니다.", "⚠️")
                 st.rerun()
 
     st.markdown("---")
