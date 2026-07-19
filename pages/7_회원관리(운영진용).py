@@ -242,7 +242,7 @@ else:
                 st.session_state.toast_msg = (f"수정되었습니다. (반영 점수: {new_score})", "✅")
                 st.rerun()
                 
-        with st.container(border=True):
+            st.divider()
             st.markdown("#### 🔹 내전 증감 스코어 수기 조정")
             target_id_bonus = st.selectbox("회원 선택 (증감 수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="bonus_select")
             current_user_id_bonus = int(target_id_bonus.split(" - ")[0])
@@ -302,7 +302,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-        with st.container(border=True):
+            st.divider()
             st.markdown("#### 🛡️ 운영진 권한 설정")
             target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="admin_select")
             
