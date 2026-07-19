@@ -242,6 +242,21 @@ def update_manual_score(user_id: int, manual_score: int) -> bool:
         logger.error(f"수동 점수 업데이트 실패: {e}")
         return False
 
+def update_manual_match_bonus(user_id: int, manual_bonus: int) -> bool:
+    """수동 내전 보너스 증감치 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 13, manual_bonus) # M열(13)이 match_bonus
+            clear_cache()
+            logger.info(f"수동 내전 보너스 업데이트 완료: ID {user_id} -> {manual_bonus}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"수동 내전 보너스 업데이트 실패: {e}")
+        return False
+
 def update_user_positions(user_id: int, main_pos: str, sub_pos: str) -> bool:
     """사용자 포지션 업데이트"""
     try:
@@ -508,6 +523,8 @@ def update_match_winner(match_id: int, new_winning_team: str) -> bool:
                 matches_sheet.update_cell(cell.row, 5, new_winning_team)
                 
             if match.get('match_type') == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
+                # BUGFIX: 롤백 후 변경된 장부(DB)를 다시 읽어오기 위해 캐시를 반드시 비워야 함 (이중 가산 방지)
+                clear_cache()
                 mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
                 players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
                 _apply_match_bonus(players_data, new_winning_team)

@@ -241,6 +241,29 @@ else:
                 database.update_manual_score(user_id, new_score)
                 st.session_state.toast_msg = (f"수정되었습니다. (반영 점수: {new_score})", "✅")
                 st.rerun()
+                
+        with st.container(border=True):
+            st.markdown("#### 🔹 내전 증감 스코어 수기 조정")
+            target_id_bonus = st.selectbox("회원 선택 (증감 수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="bonus_select")
+            current_user_id_bonus = int(target_id_bonus.split(" - ")[0])
+            current_bonus = int(df[df['아이디'] == current_user_id_bonus]['내전스코어 증감'].values[0])
+            
+            new_bonus = st.number_input("내전스코어 증감치 직접입력", value=current_bonus, step=1)
+            
+            if st.button("증감치 적용", key="btn_bonus", use_container_width=True):
+                database.update_manual_match_bonus(current_user_id_bonus, new_bonus)
+                st.session_state.toast_msg = (f"증감치가 성공적으로 수정되었습니다. (반영 점수: {new_bonus})", "✅")
+                st.rerun()
+                
+            with st.expander("❓ 내전스코어 증감 수기 조정 안내"):
+                st.markdown("""
+                <div style="background-color: rgba(255, 255, 255, 0.85); padding: 15px; border-radius: 10px; color: #111; font-size: 14px;">
+                <b>1. 현재 누적된 증감치를 강제로 덮어씁니다.</b><br>
+                어뷰징이나 버그로 비정상적으로 부풀려진 점수를 교정할 때 사용합니다. 여기서 입력한 값이 그대로 DB에 반영됩니다.<br><br>
+                <b>2. 수정 이후에는 정상적으로 누적됩니다.</b><br>
+                점수를 교정한 시점 이후에 발생한 일반내전 승/패 결과는 이 점수를 바탕으로 정상적으로 다시 더해지거나 빼집니다.
+                </div>
+                """, unsafe_allow_html=True)
             
     with col2:
         with st.container(border=True):
