@@ -8,13 +8,16 @@ from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 def unpack_user_data(user: Tuple) -> Dict[str, Any]:
     """
     사용자 데이터 튜플을 딕셔너리로 언패킹
-    데이터 구조가 12개 또는 10개 필드일 수 있음
+    데이터 구조가 13개, 12개 또는 10개 필드일 수 있음
     """
-    if len(user) == 12:
+    if len(user) == 13:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos, manual_cats = user
+    elif len(user) == 12:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
+        manual_cats = 0
     else:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-        main_pos, sub_pos = "", ""
+        main_pos, sub_pos, manual_cats = "", "", 0
     
     return {
         'user_id': user_id,
@@ -28,7 +31,8 @@ def unpack_user_data(user: Tuple) -> Dict[str, Any]:
         'is_admin': is_admin,
         'match_bonus': match_bonus,
         'main_pos': main_pos,
-        'sub_pos': sub_pos
+        'sub_pos': sub_pos,
+        'manual_cats': manual_cats
     }
 
 

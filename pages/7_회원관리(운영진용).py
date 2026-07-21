@@ -168,7 +168,7 @@ else:
         
         # Calculate symbols for 내전 보상
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        total_cats = auction_cats.get(user_dict['user_id'], 0)
+        total_cats = auction_cats.get(user_dict['user_id'], 0) + user_dict.get('manual_cats', 0)
         symbol_str = calculate_trophy_symbols_v2(total_points, total_cats)
         
         stats = user_stats.get(user_dict['user_id'], {'total': 0, 'wins': 0, 'win_rate': 0})
@@ -186,8 +186,9 @@ else:
             '솔로랭크': abbreviate_tier(user_dict['solo_tier']),
             '자유랭크': abbreviate_tier(user_dict['flex_tier']),
             '기본 파워스코어': user_dict['power_score'],
-            '수기 점수': user_dict['manual_score'],
-            '수기 기호 포인트': user_dict['manual_stars'],
+            '수기 별': user_dict['manual_stars'],
+            '수기 고양이': user_dict.get('manual_cats', 0),
+            '승리/패배': f"{stats['wins']}승 {stats['total'] - stats['wins']}패",
             '운영진 여부': user_dict['is_admin'],
             '내전스코어 증감': user_dict['match_bonus'],
             '최종 파워스코어': final_score

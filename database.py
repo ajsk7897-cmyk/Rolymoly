@@ -154,7 +154,8 @@ def get_all_approved_users() -> List[tuple]:
                 u['flex_tier'], int(u['power_score']), int(u['manual_score']), 
                 int(u['manual_stars']), int(u['is_admin']), 
                 int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0),
-                u.get('main_position', ''), u.get('sub_position', '')
+                u.get('main_position', ''), u.get('sub_position', ''),
+                int(u.get('manual_cats', 0) if str(u.get('manual_cats', '')) != '' else 0)
             ))
     return approved
 
@@ -299,6 +300,30 @@ def update_manual_stars(user_id: int, stars: int) -> bool:
         return False
     except Exception as e:
         logger.error(f"수동 별 포인트 업데이트 실패: {e}")
+        return False
+
+def update_manual_cats(user_id: int, cats: int) -> bool:
+    """수동 고양이 포인트 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        rows = users_sheet.get_all_values()
+        headers = rows[0]
+        
+        col_cats = headers.index('manual_cats') + 1 if 'manual_cats' in headers else 16
+        
+        if 'manual_cats' not in headers:
+            users_sheet.update_cell(1, 16, 'manual_cats')
+            col_cats = 16
+
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, col_cats, cats)
+            clear_cache()
+            logger.info(f"수동 고양이 포인트 업데이트 완료: ID {user_id} -> {cats}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"수동 고양이 포인트 업데이트 실패: {e}")
         return False
 
 def update_admin_role(user_id: int, is_admin: int) -> bool:

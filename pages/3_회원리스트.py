@@ -41,7 +41,7 @@ else:
         
         # Calculate trophy symbols
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        total_cats = auction_cats.get(user_dict['user_id'], 0)
+        total_cats = auction_cats.get(user_dict['user_id'], 0) + user_dict.get('manual_cats', 0)
         symbol_str = calculate_trophy_symbols_v2(total_points, total_cats)
         
         role_str = "👑 운영진" if user_dict['is_admin'] == 1 else "일반"
