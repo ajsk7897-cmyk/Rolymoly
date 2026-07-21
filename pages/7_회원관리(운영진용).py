@@ -151,7 +151,7 @@ approved_users = database.get_all_approved_users()
 search_query = st.selectbox("🔍 회원 이름 검색", options=["전체"] + [f"{u[1]}#{u[2]}" for u in approved_users]) if approved_users else "전체"
 
 user_stats = database.get_user_stats()
-auction_points = database.get_auction_points_by_user()
+auction_points, auction_cats = database.get_auction_points_by_user()
 
 if not approved_users:
     st.info("등록된 회원이 없습니다.")
@@ -168,7 +168,8 @@ else:
         
         # Calculate symbols for 내전 보상
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        symbol_str = calculate_trophy_symbols(total_points)
+        total_cats = auction_cats.get(user_dict['user_id'], 0)
+        symbol_str = calculate_trophy_symbols(total_points, total_cats)
         
         stats = user_stats.get(user_dict['user_id'], {'total': 0, 'wins': 0, 'win_rate': 0})
         

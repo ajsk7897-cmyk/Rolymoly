@@ -2,7 +2,7 @@ import gspread
 import streamlit as st
 from datetime import datetime
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from config import SPREADSHEET_ID, CACHE_TTL
 
@@ -639,21 +639,25 @@ def get_user_stats() -> Dict[int, Dict[str, int]]:
     return stats
 
 @st.cache_data(ttl=CACHE_TTL)
-def get_auction_points_by_user() -> Dict[int, int]:
-    """사용자별 경매 내전 포인트 조회"""
+def get_auction_points_by_user() -> Tuple[Dict[int, int], Dict[int, int]]:
+    """사용자별 경매 내전 포인트(별/메달/트로피용)와 20인 승리 횟수(고양이용) 조회"""
     matches = _get_all_matches_raw()
     mps = _get_all_match_players_raw()
     
     # 2026년 7월 15일 21시 (패치 배포 시점)
     cutoff_date = datetime(2026, 7, 15, 21, 0, 0)
+    # 2026년 7월 21일 21시 (고양이 보상 도입 시점)
+    cat_cutoff_date = datetime(2026, 7, 21, 21, 0, 0)
     
     points = {}
+    cats = {}
     for match in matches:
         if match.get('match_type') == 'AUCTION' and match.get('winning_team') not in ["", "아직 모름"]:
             all_match_mps = [mp for mp in mps if str(mp.get('match_id')) == str(match['id'])]
             num_players = len(all_match_mps)
             
             points_to_award = 0
+            cats_to_award = 0
             if num_players >= 40:
                 points_to_award = 5  # 1 Medal
             elif num_players >= 30:
@@ -666,14 +670,19 @@ def get_auction_points_by_user() -> Dict[int, int]:
                         match_date = datetime.strptime(match_date_str, "%Y-%m-%d %H:%M:%S")
                         if match_date < cutoff_date:
                             points_to_award = 1  # 과거 20인 내전 우승 별 유지
+                        elif match_date >= cat_cutoff_date and num_players >= 20:
+                            cats_to_award = 1    # 현재 20인 내전 우승 고양이 지급
                     except ValueError:
                         pass
             
-            if points_to_award > 0:
+            if points_to_award > 0 or cats_to_award > 0:
                 winning_mps = [mp for mp in all_match_mps if mp['team_name'] == match['winning_team']]
                 for mp in winning_mps:
                     uid = int(mp['user_id'])
-                    points[uid] = points.get(uid, 0) + points_to_award
+                    if points_to_award > 0:
+                        points[uid] = points.get(uid, 0) + points_to_award
+                    if cats_to_award > 0:
+                        cats[uid] = cats.get(uid, 0) + cats_to_award
                     
-    return points
+    return points, cats
 

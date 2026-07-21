@@ -83,10 +83,16 @@ def calculate_auction_points(tier_score: int) -> int:
     return AUCTION_DEFAULT_POINTS_VALUE
 
 
-def calculate_trophy_symbols(total_points: int) -> str:
+def calculate_trophy_symbols(total_points: int, total_cats: int = 0) -> str:
     """
-    총 포인트를 트로피/메달/별 이모지로 변환
+    총 포인트를 트로피/메달/별 이모지로 변환하고 고양이 이모지 추가
+    고양이 5마리는 별 1개(1포인트)로 자동 환산됩니다.
     """
+    extra_points = total_cats // 5
+    remaining_cats = total_cats % 5
+    
+    total_points += extra_points
+    
     trophies = total_points // 25
     medals = (total_points % 25) // 5
     stars = total_points % 5
@@ -98,6 +104,11 @@ def calculate_trophy_symbols(total_points: int) -> str:
         symbol_str += "🎖️" * medals
     if stars > 0:
         symbol_str += "⭐" * stars
+    
+    if remaining_cats > 0:
+        # 데이터프레임 내부에서는 HTML 크기 조절(span)이 텍스트로 노출되어, 기본 이모지로 대체합니다.
+        symbol_str += "🐱" * remaining_cats
+        
     if not symbol_str:
         symbol_str = "-"
     

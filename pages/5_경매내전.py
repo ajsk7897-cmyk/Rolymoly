@@ -40,7 +40,7 @@ if st.session_state.get("auction_saved_toast", False):
     st.session_state.auction_saved_toast = False
 
 approved_users = database.get_all_approved_users()
-auction_points = database.get_auction_points_by_user()
+auction_points, _ = database.get_auction_points_by_user()
 
 if not approved_users or len(approved_users) < MIN_PLAYERS_REQUIRED:
     st.warning(f"승인된 회원이 {MIN_PLAYERS_REQUIRED}명 이상이어야 경매 내전을 진행할 수 있습니다.")

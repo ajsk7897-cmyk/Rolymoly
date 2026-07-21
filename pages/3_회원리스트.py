@@ -18,7 +18,7 @@ st.markdown("클랜에 가입된 모든 회원 목록입니다. 🌟(별표)는 
 
 # Fetch data
 approved_users = database.get_all_approved_users()
-auction_points = database.get_auction_points_by_user()
+auction_points, auction_cats = database.get_auction_points_by_user()
 
 # Search functionality (Dropdown + Typing)
 user_names = [f"{u[1]}#{u[2]}" for u in approved_users] if approved_users else []
@@ -41,7 +41,8 @@ else:
         
         # Calculate trophy symbols
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        symbol_str = calculate_trophy_symbols(total_points)
+        total_cats = auction_cats.get(user_dict['user_id'], 0)
+        symbol_str = calculate_trophy_symbols(total_points, total_cats)
         
         role_str = "👑 운영진" if user_dict['is_admin'] == 1 else "일반"
         
