@@ -250,25 +250,29 @@ else:
             target_id_star = st.selectbox("회원 선택 (포인트 설정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select")
             
             current_user_id_star = int(target_id_star.split(" - ")[0])
-            current_manual_points = int(df[df['아이디'] == current_user_id_star]['수기 기호 포인트'].values[0])
+            current_manual_points = int(df[df['아이디'] == current_user_id_star]['수기 별'].values[0])
+            current_manual_cats = int(df[df['아이디'] == current_user_id_star]['수기 고양이'].values[0])
             
             current_trophies = current_manual_points // 25
             current_medals = (current_manual_points % 25) // 5
             current_stars = current_manual_points % 5
             
-            c_t, c_m, c_s = st.columns(3, vertical_alignment="bottom")
+            c_t, c_m, c_s, c_c = st.columns(4, vertical_alignment="bottom")
             with c_t:
                 new_trophy = st.number_input("🏆 트로피", value=current_trophies, min_value=0, step=1)
             with c_m:
                 new_medal = st.number_input("🎖️ 메달", value=current_medals, min_value=0, step=1)
             with c_s:
                 new_star = st.number_input("⭐ 별", value=current_stars, min_value=0, step=1)
+            with c_c:
+                new_cat = st.number_input("🐱 고양이", value=current_manual_cats, min_value=0, step=1)
                 
             new_total_points = (new_trophy * 25) + (new_medal * 5) + new_star
             
-            if st.button("포인트 적용", key="btn_star", use_container_width=True):
+            if st.button("포인트 및 고양이 적용", key="btn_star", use_container_width=True):
                 database.update_manual_stars(current_user_id_star, new_total_points)
-                st.session_state.toast_msg = (f"적용 완료! (총 {new_total_points}점으로 저장되었습니다)", "✅")
+                database.update_manual_cats(current_user_id_star, new_cat)
+                st.session_state.toast_msg = (f"적용 완료! (별 {new_total_points}점, 고양이 {new_cat}마리)", "✅")
                 st.rerun()
                 
             with st.expander("❓ 포인트 누적 및 합산 로직 안내"):
