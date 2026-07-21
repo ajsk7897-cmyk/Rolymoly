@@ -83,7 +83,7 @@ def calculate_auction_points(tier_score: int) -> int:
     return AUCTION_DEFAULT_POINTS_VALUE
 
 
-def calculate_trophy_symbols(total_points: int, total_cats: int = 0) -> str:
+def calculate_trophy_symbols_v2(total_points: int, total_cats: int = 0) -> str:
     """
     총 포인트를 트로피/메달/별 이모지로 변환하고 고양이 이모지 추가
     고양이 5마리는 별 1개(1포인트)로 자동 환산됩니다.

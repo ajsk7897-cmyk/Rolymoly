@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier, abbreviate_tier
-from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols
+from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols_v2
 
 from utils.ui import set_background
 st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
@@ -169,7 +169,7 @@ else:
         # Calculate symbols for 내전 보상
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
         total_cats = auction_cats.get(user_dict['user_id'], 0)
-        symbol_str = calculate_trophy_symbols(total_points, total_cats)
+        symbol_str = calculate_trophy_symbols_v2(total_points, total_cats)
         
         stats = user_stats.get(user_dict['user_id'], {'total': 0, 'wins': 0, 'win_rate': 0})
         
