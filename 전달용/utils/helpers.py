@@ -140,14 +140,13 @@ def validate_positions(main_pos: str, sub_pos: str) -> bool:
     return main_pos != sub_pos
 
 
-def get_match_bonus_change(base_score: int, is_win: bool) -> int:
+def get_match_bonus_change(score: int, is_win: bool) -> int:
     """
-    내전 결과에 따른 MMR 증감량 계산
+    내전 결과에 따른 파워스코어 증감량 계산 (승리 시 4%)
     """
-    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-    
-    effective_tier = calculate_clan_tier(base_score)
-    return calculate_mmr_delta(effective_tier, is_win=is_win)
+    if is_win:
+        return int(score * 0.04)
+    return 0
 
 
 def format_score_change(bonus_change: int, is_win: bool) -> str:
