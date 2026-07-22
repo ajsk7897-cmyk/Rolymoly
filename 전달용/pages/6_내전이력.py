@@ -235,6 +235,11 @@ if not matches:
 else:
     # CSV 다운로드 데이터 준비
     csv_data = []
+    
+    deltas = database.get_historical_match_deltas()
+    all_users = database.get_all_users()
+    uid_map = {f"{u['riot_id']}#{u['tag_line']}": str(u['id']) for u in all_users}
+
     for match in matches:
         match_id, match_type, host, match_date, winning_team = match
         type_str = "일반" if match_type == "NORMAL" else "경매"
@@ -244,11 +249,14 @@ else:
             base_score = m_score if m_score != -1 else p_score
             f_score = base_score + m_bonus
             
+            uid = uid_map.get(f"{r_id}#{t_line}")
+            delta = deltas.get(str(match_id), {}).get(uid, 0)
+            
             if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                is_win = (t_name == winning_team)
-                if is_win:
-                    bonus_change = get_match_bonus_change(f_score, True)
-                    change_str = f"+{bonus_change}점"
+                if delta > 0:
+                    change_str = f"+{delta}점"
+                elif delta < 0:
+                    change_str = f"{delta}점"
                 else:
                     change_str = "-"
             else:
@@ -307,11 +315,14 @@ else:
                 base_score = m_score if m_score != -1 else p_score
                 f_score = base_score + m_bonus
                 
+                uid = uid_map.get(f"{r_id}#{t_line}")
+                delta = deltas.get(str(match_id), {}).get(uid, 0)
+                
                 if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
-                    is_win = (t_name == winning_team)
-                    if is_win:
-                        bonus_change = get_match_bonus_change(f_score, True)
-                        change_str = f"+{bonus_change}점"
+                    if delta > 0:
+                        change_str = f"+{delta}점"
+                    elif delta < 0:
+                        change_str = f"{delta}점"
                     else:
                         change_str = "-"
                 else:
