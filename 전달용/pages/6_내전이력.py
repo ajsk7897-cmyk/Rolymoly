@@ -6,8 +6,10 @@ from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
+import utils.helpers
 import importlib
 importlib.reload(database)
+importlib.reload(utils.helpers)
 from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
 from utils.tournament_manager import get_ongoing_sessions, update_league_match, update_tournament_match, complete_session, update_group_match, update_group_winners, update_final_match
 from utils.helpers import get_match_bonus_change, format_score_change
@@ -244,8 +246,11 @@ else:
             
             if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
                 is_win = (t_name == winning_team)
-                bonus_change = get_match_bonus_change(base_score, is_win)
-                change_str = format_score_change(bonus_change, is_win)
+                if is_win:
+                    bonus_change = get_match_bonus_change(f_score, True)
+                    change_str = f"+{bonus_change}점"
+                else:
+                    change_str = "-"
             else:
                 change_str = "-"
                 
@@ -304,8 +309,11 @@ else:
                 
                 if match_type == "NORMAL" and winning_team and winning_team not in ["아직 모름", ""]:
                     is_win = (t_name == winning_team)
-                    bonus_change = get_match_bonus_change(base_score, is_win)
-                    change_str = format_score_change(bonus_change, is_win)
+                    if is_win:
+                        bonus_change = get_match_bonus_change(f_score, True)
+                        change_str = f"+{bonus_change}점"
+                    else:
+                        change_str = "-"
                 else:
                     change_str = "-"
                     
