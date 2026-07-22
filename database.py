@@ -607,6 +607,61 @@ def recalculate_all_match_bonuses() -> None:
         logger.info(f"전체 매치 보너스 재계산 완료: {len(updates)//2}명")
 
 @st.cache_data(ttl=CACHE_TTL)
+def get_historical_match_deltas() -> Dict[str, Dict[str, int]]:
+    """
+    모든 내전 이력을 순회하며, 각 매치별로 유저가 얻거나 잃은 실제 점수(delta)를 계산하여 반환합니다.
+    반환 형태: { match_id (str): { user_id (str): delta_score (int) } }
+    """
+    users = get_all_users()
+    matches = _get_all_matches_raw()
+    match_players = _get_all_match_players_raw()
+
+    try:
+        matches = sorted(matches, key=lambda x: str(x.get('match_date', '')))
+    except Exception:
+        pass
+
+    user_state = {}
+    for u in users:
+        uid = str(u['id'])
+        base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+        user_state[uid] = {
+            'base_score': base_score,
+            'match_bonus': 0,
+            'last_win_bonus': 0
+        }
+
+    valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
+    
+    deltas = {}
+
+    for match in valid_matches:
+        mid = str(match['id'])
+        winning_team = match['winning_team']
+        mps = [mp for mp in match_players if str(mp['match_id']) == mid]
+        
+        deltas[mid] = {}
+
+        for mp in mps:
+            uid = str(mp['user_id'])
+            if uid in user_state:
+                state = user_state[uid]
+                current_score = state['base_score'] + state['match_bonus']
+                
+                if mp['team_name'] == winning_team:
+                    gain = int(current_score * 0.04)
+                    deltas[mid][uid] = gain
+                    state['match_bonus'] += gain
+                    state['last_win_bonus'] = gain
+                else:
+                    loss = state['last_win_bonus']
+                    actual_loss = min(loss, state['match_bonus']) # 차감되는 실제 양
+                    deltas[mid][uid] = -actual_loss
+                    state['match_bonus'] -= actual_loss
+
+    return deltas
+
+@st.cache_data(ttl=CACHE_TTL)
 def get_user_stats() -> Dict[int, Dict[str, int]]:
     """사용자별 내전 통계 조회"""
     users = get_all_users()
