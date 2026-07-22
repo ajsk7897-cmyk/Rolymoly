@@ -397,38 +397,6 @@ def delete_match(match_id: int) -> bool:
         match_to_delete = next((m for m in matches if str(m['id']) == str(match_id)), None)
         mps = _get_all_match_players_raw()
         
-        if match_to_delete and match_to_delete.get('match_type') == 'NORMAL' and match_to_delete.get('winning_team') not in ['아직 모름', '']:
-            winning_team = match_to_delete['winning_team']
-            users = get_all_users()
-            user_dict = {str(u['id']): u for u in users}
-            
-            updates = []
-            for mp in mps:
-                if str(mp['match_id']) == str(match_id):
-                    uid = str(mp['user_id'])
-                    if uid in user_dict:
-                        u = user_dict[uid]
-                        from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-
-                        base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-                        effective_tier = calculate_clan_tier(base_score)
-                        current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
-                        
-                        if mp['team_name'] == winning_team:
-                            bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
-                            current_bonus -= bonus_change # rollback win
-                        else:
-                            bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
-                            current_bonus += bonus_change # rollback loss
-                            
-                        # Cap at -base_score to prevent final score < 0
-                        current_bonus = max(-base_score, current_bonus)
-                            
-                        cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
-                        updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
-            if updates:
-                users_sheet.batch_update(updates)
-
         # Delete match_players rows
         rows_to_delete = []
         for i, mp in enumerate(mps):
@@ -443,7 +411,11 @@ def delete_match(match_id: int) -> bool:
         if cell:
             matches_sheet.delete_rows(cell.row)
             
-        clear_cache()
+        if match_to_delete and match_to_delete.get('match_type') == 'NORMAL' and match_to_delete.get('winning_team') not in ['아직 모름', '']:
+            clear_cache()
+            recalculate_all_match_bonuses()
+        else:
+            clear_cache()
         logger.info(f"내전 삭제 완료: Match ID {match_id}")
         return True
     except Exception as e:
@@ -518,7 +490,7 @@ def add_match(match_type: str, host: str, winning_team: str, players_data: List[
         clear_cache()
         
         if match_type == "NORMAL" and winning_team not in ["아직 모름", ""]:
-            _apply_match_bonus(players_data, winning_team)
+            recalculate_all_match_bonuses()
         
         logger.info(f"매치 추가 완료: {match_type} - {host}")
         return True
@@ -536,25 +508,15 @@ def update_match_winner(match_id: int, new_winning_team: str) -> bool:
         match = next((m for m in matches if str(m['id']) == str(match_id)), None)
         
         if match:
-            old_winning_team = match.get('winning_team', '')
-            
-            if match.get('match_type') == 'NORMAL' and old_winning_team not in ["아직 모름", ""]:
-                mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
-                players_data_rollback = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-                _rollback_match_bonus(players_data_rollback, old_winning_team)
-                
             cell = matches_sheet.find(str(match_id), in_column=1)
             if cell:
                 matches_sheet.update_cell(cell.row, 5, new_winning_team)
                 
-            if match.get('match_type') == 'NORMAL' and new_winning_team not in ["아직 모름", ""]:
-                # BUGFIX: 롤백 후 변경된 장부(DB)를 다시 읽어오기 위해 캐시를 반드시 비워야 함 (이중 가산 방지)
+            if match.get('match_type') == 'NORMAL':
                 clear_cache()
-                mps = [mp for mp in _get_all_match_players_raw() if str(mp.get('match_id')) == str(match_id)]
-                players_data = [(mp['user_id'], mp['team_name'], mp['role'], mp['points_spent']) for mp in mps]
-                _apply_match_bonus(players_data, new_winning_team)
-                
-            clear_cache()
+                recalculate_all_match_bonuses()
+            else:
+                clear_cache()
             logger.info(f"매치 승리팀 업데이트 완료: Match {match_id} -> {new_winning_team}")
             return True
         return False
@@ -562,77 +524,76 @@ def update_match_winner(match_id: int, new_winning_team: str) -> bool:
         logger.error(f"매치 승리팀 업데이트 실패: {e}")
         return False
 
-def _apply_match_bonus(players_data: List[tuple], winning_team: str) -> None:
-    """매치 보너스 적용 (승리팀/패배팀 MMR 증감)"""
-    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-
+def recalculate_all_match_bonuses() -> None:
+    """모든 내전 이력을 시간순으로 다시 계산하여 점수를 소급 적용합니다."""
     users_sheet = get_worksheet("users")
+    headers = users_sheet.get_all_values()[0]
+    if 'last_win_bonus' not in headers:
+        users_sheet.update_cell(1, len(headers) + 1, 'last_win_bonus')
+        headers.append('last_win_bonus')
+
+    col_match_bonus = headers.index('match_bonus') + 1 if 'match_bonus' in headers else 13
+    col_last_win = headers.index('last_win_bonus') + 1
+
     users = get_all_users()
-    user_dict = {str(u['id']): u for u in users}
-    
+    matches = _get_all_matches_raw()
+    match_players = _get_all_match_players_raw()
+
+    try:
+        matches = sorted(matches, key=lambda x: str(x.get('match_date', '')))
+    except Exception:
+        pass
+
+    user_state = {}
+    for idx, u in enumerate(users):
+        uid = str(u['id'])
+        base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
+        user_state[uid] = {
+            'row': idx + 2,
+            'base_score': base_score,
+            'match_bonus': 0,
+            'last_win_bonus': 0
+        }
+
+    valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
+
+    for match in valid_matches:
+        mid = str(match['id'])
+        winning_team = match['winning_team']
+        mps = [mp for mp in match_players if str(mp['match_id']) == mid]
+
+        for mp in mps:
+            uid = str(mp['user_id'])
+            if uid in user_state:
+                state = user_state[uid]
+                current_score = state['base_score'] + state['match_bonus']
+                
+                if mp['team_name'] == winning_team:
+                    gain = int(current_score * 0.04)
+                    state['match_bonus'] += gain
+                    state['last_win_bonus'] = gain
+                else:
+                    loss = state['last_win_bonus']
+                    state['match_bonus'] = max(0, state['match_bonus'] - loss)
+
     updates = []
-    for p in players_data:
-        uid = str(p[0])
-        team_name = p[1]
-        if uid in user_dict:
-            u = user_dict[uid]
-            base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-            
-            effective_tier = calculate_clan_tier(base_score)
-            
-            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
-            
-            if team_name == winning_team:
-                bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
-                current_bonus += bonus_change
-            else:
-                bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
-                current_bonus -= bonus_change
-                
-            current_bonus = max(-base_score, current_bonus)
-                
-            cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
-            updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
-                
+    def col_to_letter(col):
+        letter = ''
+        while col > 0:
+            col, remainder = divmod(col - 1, 26)
+            letter = chr(65 + remainder) + letter
+        return letter
+
+    bonus_letter = col_to_letter(col_match_bonus)
+    last_win_letter = col_to_letter(col_last_win)
+
+    for uid, state in user_state.items():
+        updates.append({'range': f"{bonus_letter}{state['row']}", 'values': [[state['match_bonus']]]})
+        updates.append({'range': f"{last_win_letter}{state['row']}", 'values': [[state['last_win_bonus']]]})
+
     if updates:
         users_sheet.batch_update(updates)
-        logger.info(f"매치 보너스 적용 완료: {len(updates)}명")
-
-def _rollback_match_bonus(players_data: List[tuple], winning_team: str) -> None:
-    """매치 보너스 롤백 (승리팀 변경 시 이전 보너스 취소)"""
-    from utils.tier_fetcher import calculate_mmr_delta, calculate_clan_tier
-
-    users_sheet = get_worksheet("users")
-    users = get_all_users()
-    user_dict = {str(u['id']): u for u in users}
-    
-    updates = []
-    for p in players_data:
-        uid = str(p[0])
-        team_name = p[1]
-        if uid in user_dict:
-            u = user_dict[uid]
-            base_score = int(u['manual_score']) if int(u['manual_score']) != -1 else int(u['power_score'])
-            
-            effective_tier = calculate_clan_tier(base_score)
-            
-            current_bonus = int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0)
-            
-            if team_name == winning_team:
-                bonus_change = calculate_mmr_delta(effective_tier, is_win=True)
-                current_bonus -= bonus_change
-            else:
-                bonus_change = calculate_mmr_delta(effective_tier, is_win=False)
-                current_bonus += bonus_change
-                
-            current_bonus = max(-base_score, current_bonus)
-                
-            cell_row = [idx + 2 for idx, val in enumerate(users) if str(val['id']) == uid][0]
-            updates.append({'range': f"M{cell_row}", 'values': [[current_bonus]]})
-                
-    if updates:
-        users_sheet.batch_update(updates)
-        logger.info(f"매치 보너스 롤백 완료: {len(updates)}명")
+        logger.info(f"전체 매치 보너스 재계산 완료: {len(updates)//2}명")
 
 @st.cache_data(ttl=CACHE_TTL)
 def get_user_stats() -> Dict[int, Dict[str, int]]:
