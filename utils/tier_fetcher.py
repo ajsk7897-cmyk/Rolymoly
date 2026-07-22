@@ -54,6 +54,47 @@ def calculate_power_score(solo_tier_str: str, flex_tier_str: str) -> int:
     flex_points = get_flex_points(flex_tier_str)
     return solo_points + flex_points
 
+def calculate_mmr_delta(solo_tier_str: str, is_win: bool = True) -> int:
+    """
+    내전 결과에 따른 MMR 증감량 계산
+    (한 단계 상위 티어 점수 - 현재 티어 점수) / 5, 최소 1점
+    """
+    if not solo_tier_str or solo_tier_str == "Unranked":
+        return 2  # default for unranked
+        
+    clean_tier = re.sub(r' \d+ LP', '', solo_tier_str).strip()
+    
+    # Check if exact match exists in TIER_ORDER
+    matched_tier = None
+    for t in TIER_ORDER:
+        if clean_tier.startswith(t):
+            matched_tier = t
+            break
+            
+    if not matched_tier:
+        return 2
+        
+    idx = TIER_ORDER.index(matched_tier)
+    curr_score = TIER_SCORE_MAP.get(matched_tier, 0)
+    
+    if is_win:
+        if matched_tier == "Challenger":
+            return 10
+        next_tier = TIER_ORDER[idx + 1]
+        next_score = TIER_SCORE_MAP.get(next_tier, 0)
+        diff = next_score - curr_score
+    else:
+        if matched_tier == "Iron 4":
+            return 2
+        prev_tier = TIER_ORDER[idx - 1]
+        prev_score = TIER_SCORE_MAP.get(prev_tier, 0)
+        diff = curr_score - prev_score
+    
+    if diff < 0:
+        diff = 10
+        
+    delta = diff // 5
+    return max(1, delta)
 
 def calculate_clan_tier(base_score: int, final_score: Optional[int] = None) -> str:
     """
