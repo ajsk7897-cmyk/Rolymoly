@@ -79,8 +79,8 @@ if os.path.exists("temp_save_normal.json"):
 st.markdown("#### 진행자 지정")
 host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
 if host_mode == "회원 선택":
-    host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0])
-    host_name = user_dict[host_id][0].split('#')[0]
+    host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음")
+    host_name = user_dict[host_id][0].split('#')[0] if host_id else None
 else:
     host_name = st.text_input("진행자 (직접 입력)")
 
@@ -106,6 +106,16 @@ if submit_participants_balance or submit_participants_manual:
     all_selected = []
     for role, players in selected_players.items():
         all_selected.extend(players)
+        
+    # 방어 로직 (Validation)
+    if any(p is None for p in all_selected):
+        st.warning("모든 라인의 참가자를 선택해주세요.")
+        st.stop()
+        
+    if host_mode == "회원 선택" and not host_id:
+        st.warning("진행자를 선택해주세요.")
+        st.stop()
+        
     if len(set(all_selected)) < 10:
         st.error("중복된 참가자가 있습니다. 각 포지션에 다른 유저를 선택해주세요.")
     elif not host_name:

@@ -83,8 +83,8 @@ if not st.session_state.auction_started:
     st.markdown("#### 진행자 지정")
     host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
     if host_mode == "회원 선택":
-        host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0])
-        host_name = user_dict[host_id][0].split('#')[0]
+        host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음")
+        host_name = user_dict[host_id][0].split('#')[0] if host_id else None
     else:
         host_name = st.text_input("진행자 (직접 입력)")
     
@@ -119,14 +119,20 @@ if not st.session_state.auction_started:
         start_btn = st.form_submit_button("경매 시작")
         
         if start_btn:
+            # 방어 로직 추가
+            if not selected_participants:
+                st.warning("참가자를 1명 이상 선택해주세요.")
+                st.stop()
+            if host_mode == "회원 선택" and not host_id:
+                st.warning("진행자를 선택해주세요.")
+                st.stop()
+                
             # Validations
             actual_leaders = [l for l in leaders if l is not None]
             if len(set(actual_leaders)) != len(actual_leaders):
                 st.error("중복된 팀장이 있습니다.")
             elif not host_name:
                 st.error("진행자를 지정해주세요.")
-            elif not selected_participants:
-                st.error("참가자를 1명 이상 선택해주세요.")
             else:
                 st.session_state.auction_started = True
                 st.session_state.host_name = host_name
