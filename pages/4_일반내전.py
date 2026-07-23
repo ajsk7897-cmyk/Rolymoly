@@ -79,7 +79,7 @@ if os.path.exists("temp_save_normal.json"):
 st.markdown("#### 진행자 지정")
 host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
 if host_mode == "회원 선택":
-    host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음")
+    host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음", index=None, placeholder="참가자 입력")
     host_name = user_dict[host_id][0].split('#')[0] if host_id else None
 else:
     host_name = st.text_input("진행자 (직접 입력)")
@@ -91,8 +91,8 @@ with st.form("participant_form"):
     for i, role in enumerate(roles):
         with cols[i]:
             st.markdown(f"**{role}**")
-            p1 = st.selectbox(f"{role} 1", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_1")
-            p2 = st.selectbox(f"{role} 2", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_2")
+            p1 = st.selectbox(f"{role} 1", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_1", index=None, placeholder="참가자 입력")
+            p2 = st.selectbox(f"{role} 2", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0], key=f"sel_{role}_2", index=None, placeholder="참가자 입력")
             selected_players[role] = [p1, p2]
             
     col_submit1, col_submit2 = st.columns(2, vertical_alignment="bottom")

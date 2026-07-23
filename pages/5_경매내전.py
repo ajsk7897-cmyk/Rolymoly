@@ -83,7 +83,7 @@ if not st.session_state.auction_started:
     st.markdown("#### 진행자 지정")
     host_mode = st.radio("진행자 입력 방식", ["회원 선택", "직접 입력"], horizontal=True)
     if host_mode == "회원 선택":
-        host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음")
+        host_id = st.selectbox("진행자 (회원)", options=[u[1] for u in user_options], format_func=lambda x: user_dict[x][0].split('#')[0] if x else "선택 없음", index=None, placeholder="참가자 입력")
         host_name = user_dict[host_id][0].split('#')[0] if host_id else None
     else:
         host_name = st.text_input("진행자 (직접 입력)")
@@ -93,7 +93,8 @@ if not st.session_state.auction_started:
     selected_participants = st.multiselect(
         "이번 경매에 참가할 전체 선수들을 선택해주세요.",
         options=[u[1] for u in user_options],
-        format_func=lambda x: user_dict[x][0]
+        format_func=lambda x: user_dict[x][0],
+        placeholder="참가자 입력"
     )
 
     # 팀 수 확정 버튼
@@ -113,7 +114,7 @@ if not st.session_state.auction_started:
         cols = st.columns(3, vertical_alignment="bottom")
         for i in range(num_teams):
             with cols[i % 3]:
-                leader = st.selectbox(f"Team {i+1} 팀장", options=[None] + selected_participants, format_func=lambda x: "선택안함" if x is None else user_dict[x][0], key=f"leader_{i}")
+                leader = st.selectbox(f"Team {i+1} 팀장", options=[None] + selected_participants, format_func=lambda x: "선택안함" if x is None else user_dict[x][0], key=f"leader_{i}", index=None, placeholder="참가자 입력")
                 leaders.append(leader)
                 
         start_btn = st.form_submit_button("경매 시작")
