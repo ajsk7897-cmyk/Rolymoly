@@ -196,23 +196,6 @@ else:
     # Inject CSS for semi-transparent white background and black text for team containers
     st.markdown("""
     <style>
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #d1d6df !important;
-        border-radius: 12px !important;
-        padding: 10px !important;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 3px 6px rgba(255, 255, 255, 0.9), inset 0 -3px 6px rgba(0, 0, 0, 0.1) !important;
-        border: 1px solid #a3aab5 !important;
-    }
-    [data-testid="stVerticalBlockBorderWrapper"] h1,
-    [data-testid="stVerticalBlockBorderWrapper"] h2,
-    [data-testid="stVerticalBlockBorderWrapper"] h3,
-    [data-testid="stVerticalBlockBorderWrapper"] p,
-    [data-testid="stVerticalBlockBorderWrapper"] span,
-    [data-testid="stVerticalBlockBorderWrapper"] div,
-    [data-testid="stVerticalBlockBorderWrapper"] label,
-    [data-testid="stVerticalBlockBorderWrapper"] li {
-        color: #000000 !important;
-    }
     /* Expander text center alignment */
     [data-testid="stExpander"] details summary {
         display: flex !important;
@@ -240,68 +223,31 @@ else:
     </style>
     """, unsafe_allow_html=True)
     
-    # Render Teams (Max 2 per row)
-    for row_start in range(0, st.session_state.num_teams, 2):
-        cols = st.columns(2, vertical_alignment="bottom")
-        for col_idx in range(2):
+    # [UI] Render Teams (Max 4 per row for perfect grid alignment)
+    for row_start in range(0, st.session_state.num_teams, 4):
+        cols = st.columns(4, vertical_alignment="top")
+        for col_idx in range(4):
             if row_start + col_idx < st.session_state.num_teams:
                 team = st.session_state.teams[row_start + col_idx]
-                i = row_start + col_idx
                 with cols[col_idx]:
-                    with st.container(border=True):
-                        st.markdown(f"#### {team['name']}")
-                        c1, c2 = st.columns([1, 1], vertical_alignment="center")
-                        with c1:
-                            st.markdown(f"**잔여 P: {team['points']}**")
-                        with c2:
-                            with st.expander("⚙️ 수정"):
-                                new_pts = st.number_input("P", value=team['points'], step=10, key=f"pts_{i}", label_visibility="collapsed")
-                                if st.button("적용", key=f"apply_pts_{i}", use_container_width=True):
-                                    st.session_state.teams[i]['points'] = new_pts
-                                    st.rerun()
-                                    
-                        st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 2px solid #bbb;'>", unsafe_allow_html=True)
-                        
-                        for m_idx, m in enumerate(team['members']):
-                            name = user_dict[m['user_id']][0]
-                            main_pos = user_dict[m['user_id']][4]
-                            sub_pos = user_dict[m['user_id']][5]
-                            if m['role'] == 'Leader':
-                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>👑 **{name}** [{main_pos}/{sub_pos}]</div>", unsafe_allow_html=True)
-                            else:
-                                st.markdown(f"<div style='padding: 8px 0; font-size: 1rem;'>- {name} [{main_pos}/{sub_pos}] ({m['points_spent']}p)</div>", unsafe_allow_html=True)
-                                
-                            if m_idx < len(team['members']) - 1:
-                                st.markdown("<hr style='margin: 0; border: 0; border-top: 1px solid #ddd;'>", unsafe_allow_html=True)
+                    html = f"""
+                    <div style="background-color: #d1d6df; border-radius: 8px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #a3aab5; min-height: 250px; margin-bottom: 10px;">
+                        <div style="font-size: 1.1rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 5px;">{team['name']}</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 10px;">잔여 P: {team['points']}</div>
+                        <hr style="margin: 5px 0 10px 0; border: 0; border-top: 2px solid #999;">
+                    """
+                    for m in team['members']:
+                        name = user_dict[m['user_id']][0]
+                        main_pos = user_dict[m['user_id']][4]
+                        sub_pos = user_dict[m['user_id']][5]
+                        if m['role'] == 'Leader':
+                            html += f"<div style='font-size: 0.85rem; font-weight: bold; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>👑 {name} [{main_pos}/{sub_pos}]</div>"
+                        else:
+                            html += f"<div style='font-size: 0.85rem; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>- {name} [{main_pos}/{sub_pos}] ({m['points_spent']}p)</div>"
+                    
+                    html += "</div>"
+                    st.markdown(html, unsafe_allow_html=True)
                 
-    st.divider()
-    
-    st.markdown(f"### 📋 잔여 경매 매물 목록 ({len(st.session_state.remaining_pool)}명)")
-    if st.session_state.remaining_pool:
-        import pandas as pd
-        table_data = []
-        for uid in st.session_state.remaining_pool:
-            user = user_dict[uid]
-            
-            # user[0] is formatted as "[D1] Riot#TAG (스코어: 1100)"
-            # Extract just the raw ID "Riot#TAG"
-            raw_id = user[0]
-            if "] " in raw_id and " (" in raw_id:
-                raw_id = raw_id.split("] ")[1].split(" (")[0]
-                
-            table_data.append({
-                "아이디": raw_id,
-                "클랜티어": user[3],
-                "파워스코어": user[2],
-                "주포지션": user[4],
-                "부포지션": user[5]
-            })
-            
-        df = pd.DataFrame(table_data)
-        st.dataframe(df, use_container_width=True, hide_index=True, height=250)
-    else:
-        st.info("남은 매물이 없습니다.")
-            
     st.divider()
     
     # Auction Control
@@ -358,14 +304,15 @@ else:
             bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
             st.markdown("<span style='font-size: 70%; font-weight: bold;'>낙찰 팀 (클릭 시 즉시 배정)</span>", unsafe_allow_html=True)
             
-            for row_start in range(0, st.session_state.num_teams, 2):
-                cols_team = st.columns(2, vertical_alignment="bottom")
-                for col_idx in range(2):
+            # [UI] 낙찰 버튼도 4열로 컴팩트하게 배치
+            for row_start in range(0, st.session_state.num_teams, 4):
+                cols_team = st.columns(4, vertical_alignment="bottom")
+                for col_idx in range(4):
                     if row_start + col_idx < st.session_state.num_teams:
                         t_idx = row_start + col_idx
                         team = st.session_state.teams[t_idx]
                         with cols_team[col_idx]:
-                            if st.button(f"{team['name']}\n({team['points']}p, {len(team['members'])}명)", key=f"bid_team_{t_idx}", use_container_width=True):
+                            if st.button(f"{team['name']}\n({team['points']}p, {len(team['members'])}/5)", key=f"bid_team_{t_idx}", use_container_width=True):
                                 if len(team['members']) >= 5:
                                     st.error("해당 팀은 이미 5명의 인원이 꽉 찼습니다.")
                                 elif team['points'] < bid_points:
@@ -416,16 +363,48 @@ else:
                         
     st.divider()
     
+    # [UI] 하단 숨김 구역: 잔여 매물 전체 보기
+    with st.expander(f"📋 잔여 경매 매물 전체 보기 (현재 남은 인원: {len(st.session_state.remaining_pool)}명)"):
+        if st.session_state.remaining_pool:
+            import pandas as pd
+            table_data = []
+            for uid in st.session_state.remaining_pool:
+                user = user_dict[uid]
+                raw_id = user[0]
+                if "] " in raw_id and " (" in raw_id:
+                    raw_id = raw_id.split("] ")[1].split(" (")[0]
+                table_data.append({
+                    "아이디": raw_id,
+                    "클랜티어": user[3],
+                    "파워스코어": user[2],
+                    "주포지션": user[4],
+                    "부포지션": user[5]
+                })
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("남은 매물이 없습니다.")
+
     col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
     
     with col_c2:
-        if "show_edit_panel" not in st.session_state:
-            st.session_state.show_edit_panel = False
-            
-        if st.button("🛠️ 잘못 배정된 팀원 수정 (팀/포인트 변경)", use_container_width=True):
-            st.session_state.show_edit_panel = not st.session_state.show_edit_panel
-            st.rerun()
-            
+        # 하단 수정 기능 통합 패널
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            if "show_edit_panel" not in st.session_state:
+                st.session_state.show_edit_panel = False
+            if st.button("🛠️ 팀원/포인트 배정 수정", use_container_width=True):
+                st.session_state.show_edit_panel = not st.session_state.show_edit_panel
+                st.session_state.show_points_panel = False
+                st.rerun()
+        with col_e2:
+            if "show_points_panel" not in st.session_state:
+                st.session_state.show_points_panel = False
+            if st.button("⚙️ 잔여 포인트 임의 수정", use_container_width=True):
+                st.session_state.show_points_panel = not st.session_state.show_points_panel
+                st.session_state.show_edit_panel = False
+                st.rerun()
+                
         if st.session_state.show_edit_panel:
             with st.container(border=True):
                 # Get all assigned non-leader members
@@ -491,6 +470,23 @@ else:
                                 st.success("팀 배정이 수정되었습니다.")
                                 st.rerun()
                                 
+        if st.session_state.get('show_points_panel', False):
+            with st.container(border=True):
+                st.markdown("#### 팀 잔여 포인트 직접 수정")
+                col_p1, col_p2 = st.columns(2, vertical_alignment="bottom")
+                with col_p1:
+                    team_names = [t['name'] for t in st.session_state.teams]
+                    selected_team = st.selectbox("포인트를 수정할 팀", team_names)
+                    sel_idx = team_names.index(selected_team)
+                with col_p2:
+                    current_p = st.session_state.teams[sel_idx]['points']
+                    new_team_pts = st.number_input("수정할 포인트 값", value=current_p, step=10, key="edit_team_pts")
+                    
+                if st.button("팀 포인트 수정 적용", type="primary", use_container_width=True):
+                    st.session_state.teams[sel_idx]['points'] = new_team_pts
+                    st.success(f"{selected_team}의 잔여 포인트가 {new_team_pts}로 수정되었습니다.")
+                    st.rerun()
+
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         if st.button("💾 현재 경매상태 임시저장", use_container_width=True):
             data = {
