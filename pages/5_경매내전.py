@@ -248,10 +248,10 @@ else:
                     html += "</div>"
                     st.markdown(html, unsafe_allow_html=True)
                 
-    st.divider()
+    st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 1px solid #ccc;'>", unsafe_allow_html=True)
     
     # Auction Control
-    col1, col2 = st.columns([1, 1], vertical_alignment="bottom")
+    col1, col2 = st.columns([1, 1], vertical_alignment="top")
     
     with col1:
         st.markdown("### 랜덤 뽑기")
@@ -328,7 +328,7 @@ else:
                                     st.session_state.current_target = None
                                     st.rerun()
                         
-    st.divider()
+    st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 1px solid #ccc;'>", unsafe_allow_html=True)
     
     # Skipped Pool Manual Allocation
     if st.session_state.skipped_pool:
@@ -361,7 +361,7 @@ else:
                                 st.rerun()
             st.markdown("---")
                         
-    st.divider()
+    st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 1px solid #ccc;'>", unsafe_allow_html=True)
     
     # [UI] 하단 숨김 구역: 잔여 매물 전체 보기
     with st.expander(f"📋 잔여 경매 매물 전체 보기 (현재 남은 인원: {len(st.session_state.remaining_pool)}명)"):
