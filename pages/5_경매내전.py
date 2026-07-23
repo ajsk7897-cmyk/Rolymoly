@@ -241,6 +241,8 @@ else:
                         raw_name_full = user_dict[m['user_id']][0]
                         clean_name = raw_name_full.split(' (')[0] if ' (' in raw_name_full else raw_name_full
                         clean_name = clean_name.split('#')[0]
+                        if '] ' in clean_name:
+                            clean_name = clean_name.split('] ')[-1]
                         
                         if m['role'] == 'Leader':
                             html += f"<div style='font-size: 0.75rem; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>👑 {clean_name}</div>"
