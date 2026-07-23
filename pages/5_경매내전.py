@@ -223,10 +223,11 @@ else:
     </style>
     """, unsafe_allow_html=True)
     
-    # [UI] Render Teams (Max 4 per row for perfect grid alignment)
-    for row_start in range(0, st.session_state.num_teams, 4):
-        cols = st.columns(4, vertical_alignment="top")
-        for col_idx in range(4):
+    # [UI] Render Teams (6팀일 땐 3열, 그 외엔 4열 배치)
+    cols_per_row = 3 if st.session_state.num_teams == 6 else 4
+    for row_start in range(0, st.session_state.num_teams, cols_per_row):
+        cols = st.columns(cols_per_row, vertical_alignment="top")
+        for col_idx in range(cols_per_row):
             if row_start + col_idx < st.session_state.num_teams:
                 team = st.session_state.teams[row_start + col_idx]
                 with cols[col_idx]:
@@ -308,10 +309,11 @@ else:
             bid_points = st.number_input("소모 포인트", min_value=0, max_value=1000, value=0, step=10)
             st.markdown("<span style='font-size: 70%; font-weight: bold;'>낙찰 팀 (클릭 시 즉시 배정)</span>", unsafe_allow_html=True)
             
-            # [UI] 낙찰 버튼도 4열로 컴팩트하게 배치
-            for row_start in range(0, st.session_state.num_teams, 4):
-                cols_team = st.columns(4, vertical_alignment="bottom")
-                for col_idx in range(4):
+            # [UI] 낙찰 버튼도 팀 배치와 동일하게 3열 또는 4열로 컴팩트하게 배치
+            cols_per_row = 3 if st.session_state.num_teams == 6 else 4
+            for row_start in range(0, st.session_state.num_teams, cols_per_row):
+                cols_team = st.columns(cols_per_row, vertical_alignment="bottom")
+                for col_idx in range(cols_per_row):
                     if row_start + col_idx < st.session_state.num_teams:
                         t_idx = row_start + col_idx
                         team = st.session_state.teams[t_idx]
