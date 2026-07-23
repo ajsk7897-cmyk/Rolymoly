@@ -231,21 +231,23 @@ else:
                 team = st.session_state.teams[row_start + col_idx]
                 with cols[col_idx]:
                     html = f"""
-                    <div style="background-color: #d1d6df; border-radius: 8px; padding: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #a3aab5; min-height: 200px; margin-bottom: 10px;">
+                    <div style="background-color: #d1d6df; border-radius: 8px; padding: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #a3aab5; min-height: 110px; margin-bottom: 10px;">
                         <div style="font-size: 0.95rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 2px;">{team['name']}</div>
                         <div style="font-size: 0.9rem; font-weight: bold; text-align: center; color: #d32f2f; margin-bottom: 4px;">잔여 P: {team['points']}</div>
-                        <hr style="margin: 2px 0 6px 0; border: 0; border-top: 2px solid #999;">
+                        <hr style="margin: 2px 0 4px 0; border: 0; border-top: 2px solid #999;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0;">
                     """
                     for m in team['members']:
                         raw_name_full = user_dict[m['user_id']][0]
                         clean_name = raw_name_full.split(' (')[0] if ' (' in raw_name_full else raw_name_full
+                        clean_name = clean_name.split('#')[0]
                         
                         if m['role'] == 'Leader':
-                            html += f"<div style='font-size: 0.85rem; font-weight: bold; color: #000; padding: 2px 0; border-bottom: 1px solid #c0c5ce;'>👑 {clean_name}</div>"
+                            html += f"<div style='font-size: 0.75rem; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>👑 {clean_name}</div>"
                         else:
-                            html += f"<div style='font-size: 0.85rem; color: #000; padding: 2px 0; border-bottom: 1px solid #c0c5ce;'>- {clean_name} ({m['points_spent']}p)</div>"
+                            html += f"<div style='font-size: 0.75rem; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>- {clean_name} ({m['points_spent']})</div>"
                     
-                    html += "</div>"
+                    html += "</div></div>"
                     st.markdown(html, unsafe_allow_html=True)
                 
     st.markdown("<hr style='margin: 10px 0; border: 0; border-top: 1px solid #ccc;'>", unsafe_allow_html=True)
