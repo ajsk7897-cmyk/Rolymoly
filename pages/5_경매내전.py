@@ -132,6 +132,24 @@ if not st.session_state.auction_started:
                 st.session_state.host_name = host_name
                 st.session_state.num_teams = num_teams
                 
+                # [DB] Pandas 연산 로직: 경매 시작 시점의 전체 참가자 초기 리스트 CSV 데이터 생성
+                import pandas as pd
+                csv_data = []
+                for uid in selected_participants:
+                    u_info = user_dict[uid]
+                    raw_id = u_info[0]
+                    if "] " in raw_id and " (" in raw_id:
+                        raw_id = raw_id.split("] ")[1].split(" (")[0]
+                    csv_data.append({
+                        "아이디": raw_id,
+                        "클랜티어": u_info[3],
+                        "파워스코어": u_info[2],
+                        "주포지션": u_info[4],
+                        "부포지션": u_info[5]
+                    })
+                df = pd.DataFrame(csv_data)
+                st.session_state.initial_csv = df.to_csv(index=False)
+                
                 # Init teams: list of dicts. each team has 'id', 'name', 'points', 'members'
                 st.session_state.teams = []
                 for i in range(num_teams):
@@ -160,7 +178,20 @@ if not st.session_state.auction_started:
                 st.rerun()
 else:
     # --- Auction In Progress ---
-    st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
+    # [UI] 버튼 네이밍 및 칸/줄 끝단 맞춤을 고려한 레이아웃 배치
+    col_sub1, col_sub2 = st.columns([8, 2], vertical_alignment="bottom")
+    with col_sub1:
+        st.subheader(f"경매 진행 중 (진행자: {st.session_state.host_name})")
+    with col_sub2:
+        if "initial_csv" in st.session_state:
+            st.download_button(
+                "경매 매물 다운로드", 
+                data=st.session_state.initial_csv.encode('utf-8-sig'), 
+                file_name="초기_경매매물_리스트.csv", 
+                mime="text/csv", 
+                use_container_width=True,
+                help="※ 본 명단은 경매 시작 시점의 초기 전체 리스트입니다. 실시간 상태는 반영되지 않습니다."
+            )
     
     # Inject CSS for semi-transparent white background and black text for team containers
     st.markdown("""
@@ -469,7 +500,8 @@ else:
                 'teams': st.session_state.teams,
                 'remaining_pool': st.session_state.remaining_pool,
                 'skipped_pool': st.session_state.skipped_pool,
-                'current_target': st.session_state.current_target
+                'current_target': st.session_state.current_target,
+                'initial_csv': st.session_state.get('initial_csv', '')
             }
             with open("temp_save_auction.json", "w") as f:
                 json.dump(data, f)
@@ -517,4 +549,6 @@ else:
             del st.session_state.remaining_pool
             del st.session_state.skipped_pool
             del st.session_state.current_target
+            if "initial_csv" in st.session_state:
+                del st.session_state.initial_csv
             st.rerun()
