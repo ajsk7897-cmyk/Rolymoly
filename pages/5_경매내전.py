@@ -238,16 +238,16 @@ else:
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0;">
                     """
                     for m in team['members']:
+                        if m['role'] == 'Leader':
+                            continue
+                            
                         raw_name_full = user_dict[m['user_id']][0]
                         clean_name = raw_name_full.split(' (')[0] if ' (' in raw_name_full else raw_name_full
                         clean_name = clean_name.split('#')[0]
                         if '] ' in clean_name:
                             clean_name = clean_name.split('] ')[-1]
                         
-                        if m['role'] == 'Leader':
-                            html += f"<div style='font-size: 0.75rem; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>👑 {clean_name}</div>"
-                        else:
-                            html += f"<div style='font-size: 0.75rem; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>- {clean_name} ({m['points_spent']})</div>"
+                        html += f"<div style='font-size: 0.75rem; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>- {clean_name} ({m['points_spent']})</div>"
                     
                     html += "</div></div>"
                     st.markdown(html, unsafe_allow_html=True)
