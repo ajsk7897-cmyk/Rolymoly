@@ -232,18 +232,18 @@ else:
                 with cols[col_idx]:
                     html = f"""
                     <div style="background-color: #d1d6df; border-radius: 8px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #a3aab5; min-height: 250px; margin-bottom: 10px;">
-                        <div style="font-size: 1.1rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 5px;">{team['name']}</div>
-                        <div style="font-size: 1.2rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 10px;">잔여 P: {team['points']}</div>
+                        <div style="font-size: 0.95rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 5px;">{team['name']}</div>
+                        <div style="font-size: 1.05rem; font-weight: bold; text-align: center; color: #000; margin-bottom: 10px;">잔여 P: {team['points']}</div>
                         <hr style="margin: 5px 0 10px 0; border: 0; border-top: 2px solid #999;">
                     """
                     for m in team['members']:
-                        name = user_dict[m['user_id']][0]
-                        main_pos = user_dict[m['user_id']][4]
-                        sub_pos = user_dict[m['user_id']][5]
+                        raw_name_full = user_dict[m['user_id']][0]
+                        clean_name = raw_name_full.split(' (')[0] if ' (' in raw_name_full else raw_name_full
+                        
                         if m['role'] == 'Leader':
-                            html += f"<div style='font-size: 0.85rem; font-weight: bold; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>👑 {name} [{main_pos}/{sub_pos}]</div>"
+                            html += f"<div style='font-size: 0.85rem; font-weight: bold; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>👑 {clean_name}</div>"
                         else:
-                            html += f"<div style='font-size: 0.85rem; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>- {name} [{main_pos}/{sub_pos}] ({m['points_spent']}p)</div>"
+                            html += f"<div style='font-size: 0.85rem; color: #000; padding: 4px 0; border-bottom: 1px solid #c0c5ce;'>- {clean_name} ({m['points_spent']}p)</div>"
                     
                     html += "</div>"
                     st.markdown(html, unsafe_allow_html=True)
