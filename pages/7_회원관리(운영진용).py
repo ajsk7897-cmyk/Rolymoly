@@ -229,23 +229,24 @@ else:
             target_id_score = st.selectbox("회원 선택 (수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="score_select", index=None, placeholder="아이디를 입력하세요")
             
             tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
-            selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options)
+            selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options, index=None, placeholder="티어를 선택하세요")
             
+            new_score = None
             if selected_tier == "자동계산 (-1)":
                 new_score = -1
             elif selected_tier == "직접입력":
                 new_score = st.number_input("점수 직접입력", min_value=-1, step=1, value=0)
-            else:
+            elif selected_tier is not None:
                 new_score = TIER_SCORE_MAP[selected_tier]
                 
             if st.button("수정 적용", key="btn_score", use_container_width=True):
-                if target_id_score:
+                if target_id_score and selected_tier is not None:
                     user_id = int(target_id_score.split(" - ")[0])
                     database.update_manual_score(user_id, new_score)
                     st.session_state.toast_msg = (f"수정되었습니다. (반영 점수: {new_score})", "✅")
                     st.rerun()
                 else:
-                    st.warning("회원을 선택해주세요.")
+                    st.warning("회원과 티어를 모두 선택해주세요.")
 
     with col2:
         with st.container(border=True):
@@ -379,14 +380,17 @@ else:
 
             col_p1, col_p2 = st.columns(2, vertical_alignment="bottom")
             with col_p1:
-                new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=main_index)
+                new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=None, placeholder="주 포지션 선택")
             with col_p2:
-                new_sub_pos = st.selectbox("부 포지션 (수정)", positions_list, index=sub_index)
+                new_sub_pos = st.selectbox("부 포지션 (수정)", positions_list, index=None, placeholder="부 포지션 선택")
                 
             if st.button("포지션 적용", key="btn_pos", use_container_width=True):
-                database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
-                st.session_state.toast_msg = ("포지션이 성공적으로 변경되었습니다.", "✅")
-                st.rerun()
+                if new_main_pos is not None and new_sub_pos is not None:
+                    database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
+                    st.session_state.toast_msg = ("포지션이 성공적으로 변경되었습니다.", "✅")
+                    st.rerun()
+                else:
+                    st.warning("주/부 포지션을 모두 선택해주세요.")
         else:
             st.info("회원을 선택해주세요.")
 
