@@ -205,6 +205,7 @@ else:
         st.dataframe(display_df, use_container_width=True)
     
     st.write("### 회원 관리 조작")
+    user_options_list = (df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str)).tolist()
     
     st.markdown("""
     <style>
@@ -226,7 +227,7 @@ else:
     with col1:
         with st.container(border=True):
             st.markdown("#### 🔹 파워스코어 수기 수정")
-            target_id_score = st.selectbox("회원 선택 (수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="score_select", index=None, placeholder="아이디를 입력하세요")
+            target_id_score = st.selectbox("회원 선택 (수정)", user_options_list, key="score_select", index=None, placeholder="아이디를 입력하세요")
             
             tier_options = ["자동계산 (-1)"] + list(TIER_SCORE_MAP.keys()) + ["직접입력"]
             selected_tier = st.selectbox("적용할 솔랭 티어 선택", tier_options, index=None, placeholder="티어를 선택하세요")
@@ -251,7 +252,7 @@ else:
     with col2:
         with st.container(border=True):
             st.markdown("#### 🔹 우승 기호 포인트 설정")
-            target_id_star = st.selectbox("회원 선택 (포인트 설정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="star_select", index=None, placeholder="아이디를 입력하세요")
+            target_id_star = st.selectbox("회원 선택 (포인트 설정)", user_options_list, key="star_select", index=None, placeholder="아이디를 입력하세요")
             
             if target_id_star:
                 current_user_id_star = int(target_id_star.split(" - ")[0])
@@ -297,7 +298,7 @@ else:
     with col3:
         with st.container(border=True):
             st.markdown("#### 🔹 내전 증감 스코어 수기 조정")
-            target_id_bonus = st.selectbox("회원 선택 (증감 수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="bonus_select", index=None, placeholder="아이디를 입력하세요")
+            target_id_bonus = st.selectbox("회원 선택 (증감 수정)", user_options_list, key="bonus_select", index=None, placeholder="아이디를 입력하세요")
             
             if target_id_bonus:
                 current_user_id_bonus = int(target_id_bonus.split(" - ")[0])
@@ -325,7 +326,7 @@ else:
     with col4:
         with st.container(border=True):
             st.markdown("#### 🛡️ 운영진 권한 설정")
-            target_id_admin = st.selectbox("회원 선택 (권한 변경)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="admin_select", index=None, placeholder="아이디를 입력하세요")
+            target_id_admin = st.selectbox("회원 선택 (권한 변경)", user_options_list, key="admin_select", index=None, placeholder="아이디를 입력하세요")
             
             if target_id_admin:
                 current_user_id = int(target_id_admin.split(" - ")[0])
@@ -345,7 +346,7 @@ else:
     with col5:
         with st.container(border=True):
             st.markdown("#### 🔹 강제 탈퇴")
-            target_id_kick = st.selectbox("회원 선택 (강퇴)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="kick_select", index=None, placeholder="아이디를 입력하세요")
+            target_id_kick = st.selectbox("회원 선택 (강퇴)", user_options_list, key="kick_select", index=None, placeholder="아이디를 입력하세요")
             st.markdown("<br>", unsafe_allow_html=True) # 줄 맞춤용 공백
             if st.button("강제 탈퇴", type="primary", key="btn_kick", use_container_width=True):
                 if target_id_kick:
@@ -359,7 +360,7 @@ else:
     st.markdown("---")
     with st.container(border=True):
         st.markdown("#### 📝 포지션 정보 수정")
-        target_id_pos = st.selectbox("회원 선택 (포지션 수정)", df['아이디'].astype(str) + " - " + df['닉네임'].astype(str) + "#" + df['태그라인'].astype(str), key="pos_select", index=None, placeholder="아이디를 입력하세요")
+        target_id_pos = st.selectbox("회원 선택 (포지션 수정)", user_options_list, key="pos_select", index=None, placeholder="아이디를 입력하세요")
         
         if target_id_pos:
             current_user_id_pos = int(target_id_pos.split(" - ")[0])
