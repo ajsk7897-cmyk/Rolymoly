@@ -155,7 +155,8 @@ def get_all_approved_users() -> List[tuple]:
                 int(u['manual_stars']), int(u['is_admin']), 
                 int(u.get('match_bonus', 0) if str(u.get('match_bonus', '')) != '' else 0),
                 u.get('main_position', ''), u.get('sub_position', ''),
-                int(u.get('manual_cats', 0) if str(u.get('manual_cats', '')) != '' else 0)
+                int(u.get('manual_cats', 0) if str(u.get('manual_cats', '')) != '' else 0),
+                u.get('special_position', '')
             ))
     return approved
 
@@ -285,6 +286,29 @@ def update_user_positions(user_id: int, main_pos: str, sub_pos: str) -> bool:
         return False
     except Exception as e:
         logger.error(f"포지션 업데이트 실패: {e}")
+        return False
+
+def update_special_position(user_id: int, special_pos: str) -> bool:
+    """특별 포지션 업데이트"""
+    try:
+        users_sheet = get_worksheet("users")
+        rows = users_sheet.get_all_values()
+        headers = rows[0]
+        
+        col_special = headers.index('special_position') + 1 if 'special_position' in headers else len(headers) + 1
+        
+        if 'special_position' not in headers:
+            users_sheet.update_cell(1, col_special, 'special_position')
+
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, col_special, special_pos)
+            clear_cache()
+            logger.info(f"특별 포지션 업데이트 완료: ID {user_id} -> {special_pos}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"특별 포지션 업데이트 실패: {e}")
         return False
 
 def update_manual_stars(user_id: int, stars: int) -> bool:

@@ -8,16 +8,19 @@ from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 def unpack_user_data(user: Tuple) -> Dict[str, Any]:
     """
     사용자 데이터 튜플을 딕셔너리로 언패킹
-    데이터 구조가 13개, 12개 또는 10개 필드일 수 있음
+    데이터 구조가 14개, 13개, 12개 또는 10개 필드일 수 있음
     """
-    if len(user) == 13:
+    if len(user) == 14:
+        user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos, manual_cats, special_pos = user
+    elif len(user) == 13:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos, manual_cats = user
+        special_pos = ""
     elif len(user) == 12:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus, main_pos, sub_pos = user
-        manual_cats = 0
+        manual_cats, special_pos = 0, ""
     else:
         user_id, riot_id, tag_line, solo_tier, flex_tier, power_score, manual_score, manual_stars, is_admin, match_bonus = user
-        main_pos, sub_pos, manual_cats = "", "", 0
+        main_pos, sub_pos, manual_cats, special_pos = "", "", 0, ""
     
     return {
         'user_id': user_id,
@@ -32,7 +35,8 @@ def unpack_user_data(user: Tuple) -> Dict[str, Any]:
         'match_bonus': match_bonus,
         'main_pos': main_pos,
         'sub_pos': sub_pos,
-        'manual_cats': manual_cats
+        'manual_cats': manual_cats,
+        'special_pos': special_pos
     }
 
 
@@ -61,10 +65,10 @@ def format_user_display(user: Tuple, show_score: bool = True) -> str:
         return f"[{abbr_tier}] {user_dict['riot_id']}#{user_dict['tag_line']}"
 
 
-def format_user_for_selectbox(user: Tuple) -> Tuple[str, int, int, str, str, str]:
+def format_user_for_selectbox(user: Tuple) -> Tuple[str, int, int, str, str, str, int, str]:
     """
     selectbox용 사용자 데이터 포맷
-    Returns: (표시문자열, user_id, final_score, abbr_tier, main_pos, sub_pos)
+    Returns: (표시문자열, user_id, final_score, abbr_tier, main_pos, sub_pos, manual_stars, special_pos)
     """
     user_dict = unpack_user_data(user)
     _, final_score, clan_tier = calculate_user_scores(user_dict)
@@ -72,8 +76,7 @@ def format_user_for_selectbox(user: Tuple) -> Tuple[str, int, int, str, str, str
     
     display_str = format_user_display(user, show_score=True)
     return (display_str, user_dict['user_id'], final_score, abbr_tier, 
-            user_dict['main_pos'], user_dict['sub_pos'], user_dict['manual_stars'])
-
+            user_dict['main_pos'], user_dict['sub_pos'], user_dict['manual_stars'], user_dict.get('special_pos', ''))
 
 def calculate_auction_points(tier_score: int) -> int:
     """

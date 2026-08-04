@@ -181,6 +181,7 @@ else:
             '내전 보상': symbol_str,
             '주 포지션': user_dict['main_pos'],
             '부 포지션': user_dict['sub_pos'],
+            '특별 포지션': user_dict.get('special_pos', ''),
             '내전 참가 판수': stats['total'],
             '내전 승률(%)': stats['win_rate'],
             '솔로랭크': abbreviate_tier(user_dict['solo_tier']),
@@ -359,15 +360,17 @@ else:
 
     st.markdown("---")
     with st.container(border=True):
-        st.markdown("#### 📝 포지션 정보 수정")
+        st.markdown("#### 📝 포지션 정보 수정 (일반 & 특별)")
         target_id_pos = st.selectbox("회원 선택 (포지션 수정)", user_options_list, key="pos_select", index=None, placeholder="아이디를 입력하세요")
         
         if target_id_pos:
             current_user_id_pos = int(target_id_pos.split(" - ")[0])
             current_main_pos = df[df['아이디'] == current_user_id_pos]['주 포지션'].values[0]
             current_sub_pos = df[df['아이디'] == current_user_id_pos]['부 포지션'].values[0]
+            current_special_pos = df[df['아이디'] == current_user_id_pos]['특별 포지션'].values[0]
             
             positions_list = ["탑", "정글", "미드", "원딜", "서폿", ""]
+            special_positions_list = ["미지정", "오른#뿌우"]
             
             try:
                 main_index = positions_list.index(current_main_pos)
@@ -379,16 +382,23 @@ else:
             except ValueError:
                 sub_index = 0
 
-            col_p1, col_p2 = st.columns(2, vertical_alignment="bottom")
+            col_p1, col_p2, col_p3 = st.columns([1, 1, 1], vertical_alignment="bottom")
             with col_p1:
-                new_main_pos = st.selectbox("주 포지션 (수정)", positions_list, index=None, placeholder="주 포지션 선택")
+                new_main_pos = st.selectbox("주 포지션", positions_list, index=main_index, placeholder="주 포지션 선택")
             with col_p2:
-                new_sub_pos = st.selectbox("부 포지션 (수정)", positions_list, index=None, placeholder="부 포지션 선택")
+                new_sub_pos = st.selectbox("부 포지션", positions_list, index=sub_index, placeholder="부 포지션 선택")
+            with col_p3:
+                new_special_pos = st.selectbox("👑 특별 포지션 (오른#뿌우)", special_positions_list, index=1 if current_special_pos == "오른#뿌우" else 0)
                 
-            if st.button("포지션 적용", key="btn_pos", use_container_width=True):
+            if st.button("포지션 전체 적용", key="btn_pos", use_container_width=True, type="secondary"):
                 if new_main_pos is not None and new_sub_pos is not None:
+                    # Update Main/Sub
                     database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
-                    st.session_state.toast_msg = ("포지션이 성공적으로 변경되었습니다.", "✅")
+                    # Update Special
+                    db_special_val = "" if new_special_pos == "미지정" else new_special_pos
+                    database.update_special_position(current_user_id_pos, db_special_val)
+                    
+                    st.session_state.toast_msg = ("포지션(일반 및 특별)이 성공적으로 변경되었습니다.", "✅")
                     st.rerun()
                 else:
                     st.warning("주/부 포지션을 모두 선택해주세요.")
