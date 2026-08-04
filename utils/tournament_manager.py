@@ -41,14 +41,35 @@ def create_session(host_name, teams, players_data, match_format):
     if match_format == "LEAGUE":
         matches = []
         match_id = 1
-        for t1, t2 in itertools.combinations(team_names, 2):
-            matches.append({
-                "id": match_id,
-                "team1": t1,
-                "team2": t2,
-                "winner": None
-            })
-            match_id += 1
+        n = len(team_names)
+        
+        if n in [4, 6, 8]:
+            teams_circle = list(team_names)
+            num_rounds = n - 1
+            for r in range(num_rounds):
+                for i in range(n // 2):
+                    t1 = teams_circle[i]
+                    t2 = teams_circle[n - 1 - i]
+                    matches.append({
+                        "id": match_id,
+                        "round": r + 1,
+                        "team1": t1,
+                        "team2": t2,
+                        "winner": None
+                    })
+                    match_id += 1
+                teams_circle = [teams_circle[0]] + [teams_circle[-1]] + teams_circle[1:-1]
+        else:
+            for t1, t2 in itertools.combinations(team_names, 2):
+                matches.append({
+                    "id": match_id,
+                    "round": 0,
+                    "team1": t1,
+                    "team2": t2,
+                    "winner": None
+                })
+                match_id += 1
+                
         session["matches"] = matches
         
         standings = {}

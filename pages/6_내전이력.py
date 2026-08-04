@@ -68,22 +68,40 @@ if ongoing_sessions:
                 
                 # Render Matches
                 st.markdown("#### ⚔️ 경기 일정 및 결과 입력")
+                
+                rounds_dict = {}
                 for m in s["matches"]:
-                    col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
-                    with col1:
-                        st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
-                    with col2:
-                        st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
-                    with col3:
-                        st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
-                    with col4:
-                        winner_opts = ["진행 전", m["team1"], m["team2"]]
-                        current_winner = m["winner"] if m["winner"] else "진행 전"
-                        new_winner = st.selectbox(f"Match {m['id']} 승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"lg_{s['session_id']}_{m['id']}", label_visibility="collapsed")
-                        if new_winner != current_winner:
-                            actual_winner = None if new_winner == "진행 전" else new_winner
-                            update_league_match(s["session_id"], m["id"], actual_winner)
-                            st.rerun()
+                    r = m.get("round", 0)
+                    if r not in rounds_dict:
+                        rounds_dict[r] = []
+                    rounds_dict[r].append(m)
+                    
+                sorted_rounds = sorted(rounds_dict.keys())
+                for r in sorted_rounds:
+                    if r == 0:
+                        if len(sorted_rounds) > 1:
+                            st.markdown("**기타 매치**")
+                    else:
+                        st.markdown(f"**Round {r}**")
+                        
+                    for m in rounds_dict[r]:
+                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
+                        with col1:
+                            st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
+                        with col2:
+                            st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
+                        with col3:
+                            st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
+                        with col4:
+                            winner_opts = ["진행 전", m["team1"], m["team2"]]
+                            current_winner = m["winner"] if m["winner"] else "진행 전"
+                            new_winner = st.selectbox(f"Match {m['id']} 승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"lg_{s['session_id']}_{m['id']}", label_visibility="collapsed")
+                            if new_winner != current_winner:
+                                actual_winner = None if new_winner == "진행 전" else new_winner
+                                update_league_match(s["session_id"], m["id"], actual_winner)
+                                st.rerun()
+                    if len(sorted_rounds) > 1 or r != 0:
+                        st.markdown("<hr style='margin: 10px 0; border: 1px solid #444;'>", unsafe_allow_html=True)
             elif s["format"] == "GROUP_STAGE":
                 # Render Standings
                 st.markdown("#### 🏆 조별 순위표")
