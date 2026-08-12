@@ -590,11 +590,17 @@ def recalculate_all_match_bonuses() -> None:
             'last_win_bonus': 0
         }
 
+    # 새 로직 적용 기준일 (2026-08-12)
+    NEW_LOGIC_CUTOFF = "2026-08-12"
+    EMERALD_THRESHOLD = 280  # Emerald 4 기준 점수
+
     valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
 
     for match in valid_matches:
         mid = str(match['id'])
         winning_team = match['winning_team']
+        match_date = str(match.get('match_date', ''))[:10]
+        use_new_logic = match_date >= NEW_LOGIC_CUTOFF
         mps = [mp for mp in match_players if str(mp['match_id']) == mid]
 
         for mp in mps:
@@ -603,13 +609,24 @@ def recalculate_all_match_bonuses() -> None:
                 state = user_state[uid]
                 current_score = state['base_score'] + state['match_bonus']
                 
-                if mp['team_name'] == winning_team:
-                    gain = int(current_score * 0.04)
-                    state['match_bonus'] += gain
-                    state['last_win_bonus'] = gain
+                if use_new_logic:
+                    # 새 로직: 에메랄드 이상 15점, 플래티넘 이하 10점 고정 증감
+                    delta = 15 if current_score >= EMERALD_THRESHOLD else 10
+                    if mp['team_name'] == winning_team:
+                        state['match_bonus'] += delta
+                        state['last_win_bonus'] = delta
+                    else:
+                        state['match_bonus'] -= delta
+                        # 하한 없음 - 마이너스 허용, 즉시 강등
                 else:
-                    loss = state['last_win_bonus']
-                    state['match_bonus'] = max(0, state['match_bonus'] - loss)
+                    # 기존 로직: 4% 증가, last_win_bonus 차감 (2026-08-12 이전 이력)
+                    if mp['team_name'] == winning_team:
+                        gain = int(current_score * 0.04)
+                        state['match_bonus'] += gain
+                        state['last_win_bonus'] = gain
+                    else:
+                        loss = state['last_win_bonus']
+                        state['match_bonus'] = max(0, state['match_bonus'] - loss)
 
     updates = []
     def col_to_letter(col):
@@ -655,6 +672,10 @@ def get_historical_match_deltas() -> Dict[str, Dict[str, int]]:
             'last_win_bonus': 0
         }
 
+    # 새 로직 적용 기준일 (2026-08-12)
+    NEW_LOGIC_CUTOFF = "2026-08-12"
+    EMERALD_THRESHOLD = 280  # Emerald 4 기준 점수
+
     valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
     
     deltas = {}
@@ -662,6 +683,8 @@ def get_historical_match_deltas() -> Dict[str, Dict[str, int]]:
     for match in valid_matches:
         mid = str(match['id'])
         winning_team = match['winning_team']
+        match_date = str(match.get('match_date', ''))[:10]
+        use_new_logic = match_date >= NEW_LOGIC_CUTOFF
         mps = [mp for mp in match_players if str(mp['match_id']) == mid]
         
         deltas[mid] = {}
@@ -672,16 +695,28 @@ def get_historical_match_deltas() -> Dict[str, Dict[str, int]]:
                 state = user_state[uid]
                 current_score = state['base_score'] + state['match_bonus']
                 
-                if mp['team_name'] == winning_team:
-                    gain = int(current_score * 0.04)
-                    deltas[mid][uid] = gain
-                    state['match_bonus'] += gain
-                    state['last_win_bonus'] = gain
+                if use_new_logic:
+                    # 새 로직: 에메랄드 이상 15점, 플래티넘 이하 10점 고정 증감
+                    delta = 15 if current_score >= EMERALD_THRESHOLD else 10
+                    if mp['team_name'] == winning_team:
+                        deltas[mid][uid] = delta
+                        state['match_bonus'] += delta
+                        state['last_win_bonus'] = delta
+                    else:
+                        deltas[mid][uid] = -delta
+                        state['match_bonus'] -= delta
                 else:
-                    loss = state['last_win_bonus']
-                    actual_loss = min(loss, state['match_bonus']) # 차감되는 실제 양
-                    deltas[mid][uid] = -actual_loss
-                    state['match_bonus'] -= actual_loss
+                    # 기존 로직: 4% 증가, last_win_bonus 차감 (2026-08-12 이전 이력)
+                    if mp['team_name'] == winning_team:
+                        gain = int(current_score * 0.04)
+                        deltas[mid][uid] = gain
+                        state['match_bonus'] += gain
+                        state['last_win_bonus'] = gain
+                    else:
+                        loss = state['last_win_bonus']
+                        actual_loss = min(loss, state['match_bonus']) # 차감되는 실제 양
+                        deltas[mid][uid] = -actual_loss
+                        state['match_bonus'] -= actual_loss
 
     return deltas
 

@@ -149,11 +149,11 @@ def validate_positions(main_pos: str, sub_pos: str) -> bool:
 
 def get_match_bonus_change(score: int, is_win: bool) -> int:
     """
-    내전 결과에 따른 파워스코어 증감량 계산 (승리 시 4%)
+    내전 결과에 따른 파워스코어 증감량 계산
+    에메랄드 이상(280점~): ±15점, 플래티넘 이하: ±10점
     """
-    if is_win:
-        return int(score * 0.04)
-    return 0
+    delta = 15 if score >= 280 else 10
+    return delta if is_win else -delta
 
 
 def format_score_change(bonus_change: int, is_win: bool) -> str:
