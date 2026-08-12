@@ -8,9 +8,7 @@ import database
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols_v2
 
-from utils.ui import set_background
 st.set_page_config(page_title="회원 리스트", page_icon="👥", layout="wide")
-set_background("images (1).jpg")
 
 st.title("👥 회원 리스트")
 

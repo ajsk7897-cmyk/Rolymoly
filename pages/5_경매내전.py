@@ -10,12 +10,9 @@ from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 from utils.helpers import unpack_user_data, calculate_user_scores, format_user_for_selectbox, calculate_auction_points
 from utils.tournament_manager import create_session
 
-from utils.ui import set_background
 from config import MIN_PLAYERS_REQUIRED, AUCTION_TEAM_OPTIONS
 
 st.set_page_config(page_title="경매 내전", page_icon="💰", layout="wide")
-if not st.session_state.get("auction_started", False):
-    set_background("images (3).jpg")
 
 st.markdown("""
 <style>

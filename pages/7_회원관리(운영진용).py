@@ -8,11 +8,9 @@ import database
 from utils.tier_fetcher import fetch_tier_data, TIER_SCORE_MAP, calculate_clan_tier, abbreviate_tier
 from utils.helpers import unpack_user_data, calculate_user_scores, calculate_trophy_symbols_v2
 
-from utils.ui import set_background
-st.set_page_config(page_title="회원 관리", page_icon="👑", layout="wide")
-set_background("190aa82672754bd77.gif")
+st.set_page_config(page_title="회원 관리 (운영진)", page_icon="⚙️", layout="wide")
 
-st.title("👑 회원 관리 (관리자 전용)")
+st.title("⚙️ 회원 관리 (운영진 전용)")
 
 if "toast_msg" in st.session_state:
     st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])

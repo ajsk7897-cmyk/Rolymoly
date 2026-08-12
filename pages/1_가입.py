@@ -8,13 +8,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.helpers import validate_riot_id, validate_positions
 
-from utils.ui import set_background
 from config import DEFAULT_ROLES
 
-st.set_page_config(page_title="일반회원 가입", page_icon="📝")
-set_background("Portfolio_img_10220755_1.gif")
+st.set_page_config(page_title="클랜 가입 신청", page_icon="📝", layout="centered")
 
-st.title("📝 일반회원 가입")
+st.title("📝 클랜 가입 신청")
 
 st.markdown("클랜 가입을 위해 롤 아이디와 생년월일을 입력해주세요.")
 

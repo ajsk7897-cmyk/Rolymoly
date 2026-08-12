@@ -9,11 +9,9 @@ import database
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 from utils.helpers import unpack_user_data, calculate_user_scores, format_user_for_selectbox
 
-from utils.ui import set_background
 from config import MIN_PLAYERS_REQUIRED, DEFAULT_ROLES
 
 st.set_page_config(page_title="일반 내전", page_icon="⚔️", layout="wide")
-set_background("images (2).jpg")
 
 st.markdown("""
 <style>
