@@ -51,12 +51,12 @@ def format_user(user):
     return format_user_for_selectbox(user)
 
 @st.cache_data(ttl=60)
-def get_formatted_users(users):
+def get_formatted_users_for_auction(users):
     options = [format_user(u) for u in users]
     u_dict = {u[1]: u for u in options}
     return options, u_dict
 
-user_options, user_dict = get_formatted_users(approved_users)
+user_options, user_dict = get_formatted_users_for_auction(approved_users)
 
 # Init session state for auction
 if "auction_started" not in st.session_state:

@@ -51,12 +51,12 @@ def format_user(user):
     return f"[{abbr_tier}] {user_dict['riot_id']}#{user_dict['tag_line']} (스코어: {final_score})", user_dict['user_id'], final_score, user_dict['riot_id']
 
 @st.cache_data(ttl=60)
-def get_formatted_users(users):
+def get_formatted_users_for_normal(users):
     options = [format_user(u) for u in users]
     u_dict = {u[1]: u for u in options}
     return options, u_dict
 
-user_options, user_dict = get_formatted_users(approved_users)
+user_options, user_dict = get_formatted_users_for_normal(approved_users)
 
 roles = DEFAULT_ROLES
 
