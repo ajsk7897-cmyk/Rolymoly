@@ -21,7 +21,7 @@ st.markdown("""
 .team-name-small {
     font-size: 14px !important;
     font-weight: bold;
-    color: white !important;
+    color: var(--text-color);
     white-space: nowrap;
     overflow: visible;
 }
@@ -359,9 +359,9 @@ else:
             c1, c2, c3 = st.columns([3, 4, 1], vertical_alignment="center")
             with c1:
                 if winning_team and winning_team != "아직 모름":
-                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: white; white-space: nowrap;'>🏆 승리 팀: {winning_team}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: var(--text-color); white-space: nowrap;'>🏆 승리 팀: {winning_team}</div>", unsafe_allow_html=True)
                 else:
-                    st.markdown("<div style='font-size: 16px; font-weight: bold; color: white; white-space: nowrap;'>🏆 승리 팀: 미정</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='font-size: 16px; font-weight: bold; color: var(--text-color); white-space: nowrap;'>🏆 승리 팀: 미정</div>", unsafe_allow_html=True)
             with c2:
                 new_winner = st.selectbox("승리 팀 수정", options, index=options.index(winning_team) if winning_team in options else 0, key=f"sel_{match_id}", label_visibility="collapsed")
             with c3:
@@ -378,9 +378,9 @@ else:
                             t_name, members = team_items[row_start + col_idx]
                             with cols[col_idx]:
                                 if t_name == winning_team:
-                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: white; white-space: nowrap;'>👑 {t_name} (승리)</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: var(--text-color); white-space: nowrap;'>👑 {t_name} (승리)</div>", unsafe_allow_html=True)
                                 else:
-                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: white; white-space: nowrap;'>{t_name}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div style='font-size: 16px; font-weight: bold; color: var(--text-color); white-space: nowrap;'>{t_name}</div>", unsafe_allow_html=True)
                                     
                                 df = pd.DataFrame(members)
                                 st.dataframe(df, use_container_width=True)
