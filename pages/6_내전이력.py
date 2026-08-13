@@ -38,7 +38,7 @@ st.title("📜 내전 이력")
 
 ongoing_sessions = get_ongoing_sessions()
 if ongoing_sessions:
-    st.subheader("🏁 진행 중인 경매내전 대회 (리그/토너먼트)")
+    st.subheader("🏁 진행 중인 대회 (리그/토너먼트)")
     for s in ongoing_sessions:
         if s["format"] == "LEAGUE":
             fmt_str = "풀리그 (모든 팀 상호 대전)"
@@ -48,7 +48,8 @@ if ongoing_sessions:
         else:
             fmt_str = "토너먼트 (승자 진출)"
         s_date = datetime.fromtimestamp(int(s["session_id"])).strftime("%y년 %m월 %d일 %H:%M")
-        with st.expander(f"[{fmt_str}] {s_date} - 진행자: {s['host']}", expanded=True):
+        match_type_str = "일반" if s.get("match_type") == "NORMAL" else "경매"
+        with st.expander(f"[{match_type_str}] [{fmt_str}] {s_date} - 진행자: {s['host']}", expanded=True):
             if s["format"] == "LEAGUE":
                 # Render Standings
                 st.markdown("#### 🏆 조별 순위표")
@@ -237,7 +238,8 @@ if ongoing_sessions:
                         st.error("최종 우승팀을 선택해주세요.")
                     else:
                         complete_session(s["session_id"], final_winner)
-                        database.add_match("AUCTION", s["host"], final_winner, s["players_data"])
+                        match_type = s.get("match_type", "AUCTION")
+                        database.add_match(match_type, s["host"], final_winner, s["players_data"])
                         st.success("대회가 종료되고 내전 이력에 저장되었습니다!")
                         st.rerun()
     st.divider()

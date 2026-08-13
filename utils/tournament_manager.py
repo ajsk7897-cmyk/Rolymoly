@@ -19,7 +19,7 @@ def _save_data(data):
     with open(TOURNAMENTS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def create_session(host_name, teams, players_data, match_format):
+def create_session(host_name, teams, players_data, match_format, match_type="AUCTION"):
     """
     teams: list of team dicts (id, name, points, members)
     players_data: list of tuples (user_id, team_name, role, points_spent)
@@ -33,6 +33,7 @@ def create_session(host_name, teams, players_data, match_format):
         "session_id": str(int(time.time())),
         "host": host_name,
         "format": match_format,
+        "match_type": match_type,
         "teams": teams,
         "players_data": players_data,
         "status": "ONGOING"

@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
 from utils.tier_fetcher import calculate_clan_tier, abbreviate_tier
 from utils.helpers import unpack_user_data, calculate_user_scores, format_user_for_selectbox
+from utils.tournament_manager import create_session
 
 from config import MIN_PLAYERS_REQUIRED, DEFAULT_ROLES
 
@@ -447,9 +448,10 @@ def render_tab2():
         if "confirm_step_1_20" not in st.session_state:
             st.session_state.confirm_step_1_20 = False
             
-        winning_team = st.selectbox("승리 팀 기록 (선택)", ["아직 모름", "Team A", "Team B", "Team C", "Team D"], key="win_20")
+        match_format_20 = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "풀리그 (모든 팀 상호 대전)", "토너먼트 (승자 진출)"], key="format_20")
+        winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름", "Team A", "Team B", "Team C", "Team D"], key="win_20")
         
-        if st.button("팀 확정 및 DB 저장", type="primary", key="confirm_btn_20"):
+        if st.button("대회 세션 확정", type="primary", key="confirm_btn_20"):
             st.session_state.confirm_step_1_20 = True
             
         if st.session_state.confirm_step_1_20:
@@ -464,8 +466,30 @@ def render_tab2():
                         players_data.append((st.session_state.team_c_20[role], "Team C", role, 0))
                         players_data.append((st.session_state.team_d_20[role], "Team D", role, 0))
                     
-                    database.add_match("NORMAL", st.session_state.match_host_20, winning_team, players_data)
-                    st.session_state.normal_saved_toast = True
+                    if "단판승부" in match_format_20:
+                        database.add_match("NORMAL", st.session_state.match_host_20, winning_team, players_data)
+                        st.session_state.normal_saved_toast = True
+                    else:
+                        fmt = "LEAGUE" if "풀리그" in match_format_20 else "TOURNAMENT"
+                        teams = []
+                        teams_data = [
+                            (0, "Team A", st.session_state.team_a_20),
+                            (1, "Team B", st.session_state.team_b_20),
+                            (2, "Team C", st.session_state.team_c_20),
+                            (3, "Team D", st.session_state.team_d_20),
+                        ]
+                        for tid, tname, tdict in teams_data:
+                            members = []
+                            for r, uid in tdict.items():
+                                members.append({'user_id': uid, 'points_spent': 0, 'role': r})
+                            teams.append({
+                                'id': tid,
+                                'name': tname,
+                                'points': 0,
+                                'members': members
+                            })
+                        create_session(st.session_state.match_host_20, teams, players_data, fmt, "NORMAL")
+                        st.session_state.normal_saved_toast = True
                     
                     if os.path.exists("temp_save_normal_20.json"):
                         os.remove("temp_save_normal_20.json")
