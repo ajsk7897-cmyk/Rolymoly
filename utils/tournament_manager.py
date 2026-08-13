@@ -183,13 +183,13 @@ def update_league_match(session_id, match_id, winner_team_name, winner_kills=0, 
                         
                         old_w_kills = m.get("winner_kills", 0)
                         old_w_deaths = m.get("winner_deaths", 0)
-                        s["standings"][old_winner]["kills"] -= old_w_kills
-                        s["standings"][old_winner]["deaths"] -= old_w_deaths
+                        s["standings"][old_winner]["kills"] = s["standings"][old_winner].get("kills", 0) - old_w_kills
+                        s["standings"][old_winner]["deaths"] = s["standings"][old_winner].get("deaths", 0) - old_w_deaths
                         
                         loser = m["team1"] if m["team2"] == old_winner else m["team2"]
                         s["standings"][loser]["losses"] -= 1
-                        s["standings"][loser]["kills"] -= old_w_deaths
-                        s["standings"][loser]["deaths"] -= old_w_kills
+                        s["standings"][loser]["kills"] = s["standings"][loser].get("kills", 0) - old_w_deaths
+                        s["standings"][loser]["deaths"] = s["standings"][loser].get("deaths", 0) - old_w_kills
                         
                     # Apply new winner
                     m["winner"] = winner_team_name
@@ -199,13 +199,13 @@ def update_league_match(session_id, match_id, winner_team_name, winner_kills=0, 
                     if winner_team_name:
                         s["standings"][winner_team_name]["wins"] += 1
                         s["standings"][winner_team_name]["points"] += 3
-                        s["standings"][winner_team_name]["kills"] += winner_kills
-                        s["standings"][winner_team_name]["deaths"] += winner_deaths
+                        s["standings"][winner_team_name]["kills"] = s["standings"][winner_team_name].get("kills", 0) + winner_kills
+                        s["standings"][winner_team_name]["deaths"] = s["standings"][winner_team_name].get("deaths", 0) + winner_deaths
                         
                         loser = m["team1"] if m["team2"] == winner_team_name else m["team2"]
                         s["standings"][loser]["losses"] += 1
-                        s["standings"][loser]["kills"] += winner_deaths
-                        s["standings"][loser]["deaths"] += winner_kills
+                        s["standings"][loser]["kills"] = s["standings"][loser].get("kills", 0) + winner_deaths
+                        s["standings"][loser]["deaths"] = s["standings"][loser].get("deaths", 0) + winner_kills
                     break
     _save_data(sessions)
 
@@ -258,13 +258,13 @@ def update_group_match(session_id, match_id, winner_team_name, winner_kills=0, w
                         
                         old_w_kills = m.get("winner_kills", 0)
                         old_w_deaths = m.get("winner_deaths", 0)
-                        s["standings"][old_winner]["kills"] -= old_w_kills
-                        s["standings"][old_winner]["deaths"] -= old_w_deaths
+                        s["standings"][old_winner]["kills"] = s["standings"][old_winner].get("kills", 0) - old_w_kills
+                        s["standings"][old_winner]["deaths"] = s["standings"][old_winner].get("deaths", 0) - old_w_deaths
                         
                         loser = m["team1"] if m["team2"] == old_winner else m["team2"]
                         s["standings"][loser]["losses"] -= 1
-                        s["standings"][loser]["kills"] -= old_w_deaths
-                        s["standings"][loser]["deaths"] -= old_w_kills
+                        s["standings"][loser]["kills"] = s["standings"][loser].get("kills", 0) - old_w_deaths
+                        s["standings"][loser]["deaths"] = s["standings"][loser].get("deaths", 0) - old_w_kills
                         
                     # Apply new winner
                     m["winner"] = winner_team_name
@@ -274,13 +274,13 @@ def update_group_match(session_id, match_id, winner_team_name, winner_kills=0, w
                     if winner_team_name:
                         s["standings"][winner_team_name]["wins"] += 1
                         s["standings"][winner_team_name]["points"] += 3
-                        s["standings"][winner_team_name]["kills"] += winner_kills
-                        s["standings"][winner_team_name]["deaths"] += winner_deaths
+                        s["standings"][winner_team_name]["kills"] = s["standings"][winner_team_name].get("kills", 0) + winner_kills
+                        s["standings"][winner_team_name]["deaths"] = s["standings"][winner_team_name].get("deaths", 0) + winner_deaths
                         
                         loser = m["team1"] if m["team2"] == winner_team_name else m["team2"]
                         s["standings"][loser]["losses"] += 1
-                        s["standings"][loser]["kills"] += winner_deaths
-                        s["standings"][loser]["deaths"] += winner_kills
+                        s["standings"][loser]["kills"] = s["standings"][loser].get("kills", 0) + winner_deaths
+                        s["standings"][loser]["deaths"] = s["standings"][loser].get("deaths", 0) + winner_kills
                     break
     _save_data(sessions)
 
