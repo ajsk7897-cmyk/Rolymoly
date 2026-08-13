@@ -54,14 +54,17 @@ if ongoing_sessions:
                 # Render Standings
                 st.markdown("#### 🏆 조별 순위표")
                 standings = s["standings"]
-                # sort by points descending
-                sorted_standings = sorted(standings.items(), key=lambda x: x[1]["points"], reverse=True)
+                # sort by points descending, then by K-D diff
+                sorted_standings = sorted(standings.items(), key=lambda x: (x[1]["points"], x[1].get("kills", 0) - x[1].get("deaths", 0)), reverse=True)
                 df_standings = pd.DataFrame([{
                     "순위": i+1,
                     "팀명": k,
                     "승점": v["points"],
                     "승": v["wins"],
-                    "패": v["losses"]
+                    "패": v["losses"],
+                    "킬": v.get("kills", 0),
+                    "데스": v.get("deaths", 0),
+                    "득실차(K-D)": v.get("kills", 0) - v.get("deaths", 0)
                 } for i, (k, v) in enumerate(sorted_standings)])
                 st.dataframe(df_standings, use_container_width=True)
                 
@@ -84,20 +87,22 @@ if ongoing_sessions:
                         st.markdown(f"**Round {r}**")
                         
                     for m in rounds_dict[r]:
-                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
-                        with col1:
-                            st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
-                        with col2:
-                            st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
-                        with col3:
-                            st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
-                        with col4:
+                        c1, c2, c3, c4, c5, c6, c7 = st.columns([2.0, 0.5, 2.0, 2.2, 1.2, 1.2, 0.9], vertical_alignment="bottom")
+                        with c1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
+                        with c2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
+                        with c3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
+                        with c4:
                             winner_opts = ["진행 전", m["team1"], m["team2"]]
                             current_winner = m["winner"] if m["winner"] else "진행 전"
                             new_winner = st.selectbox(f"Match {m['id']} 승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"lg_{s['session_id']}_{m['id']}", label_visibility="collapsed")
-                            if new_winner != current_winner:
+                        with c5:
+                            w_kills = st.number_input("승리 킬", value=m.get("winner_kills", 0), min_value=0, step=1, key=f"lg_k_{s['session_id']}_{m['id']}")
+                        with c6:
+                            w_deaths = st.number_input("승리 데스", value=m.get("winner_deaths", 0), min_value=0, step=1, key=f"lg_d_{s['session_id']}_{m['id']}")
+                        with c7:
+                            if st.button("저장", key=f"lg_btn_{s['session_id']}_{m['id']}"):
                                 actual_winner = None if new_winner == "진행 전" else new_winner
-                                update_league_match(s["session_id"], m["id"], actual_winner)
+                                update_league_match(s["session_id"], m["id"], actual_winner, w_kills, w_deaths)
                                 st.rerun()
                     if len(sorted_rounds) > 1 or r != 0:
                         st.markdown("<hr style='margin: 10px 0; border: 1px solid #444;'>", unsafe_allow_html=True)
@@ -110,52 +115,55 @@ if ongoing_sessions:
                 with c1:
                     st.markdown("**A조**")
                     a_standings = {k: v for k, v in standings.items() if v["group"] == "A"}
-                    a_sorted = sorted(a_standings.items(), key=lambda x: x[1]["points"], reverse=True)
-                    df_a = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"]} for i, (k, v) in enumerate(a_sorted)])
+                    a_sorted = sorted(a_standings.items(), key=lambda x: (x[1]["points"], x[1].get("kills", 0) - x[1].get("deaths", 0)), reverse=True)
+                    df_a = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"], "득실차": v.get("kills", 0) - v.get("deaths", 0)} for i, (k, v) in enumerate(a_sorted)])
                     st.dataframe(df_a, use_container_width=True)
                     
                 with c2:
                     st.markdown("**B조**")
                     b_standings = {k: v for k, v in standings.items() if v["group"] == "B"}
-                    b_sorted = sorted(b_standings.items(), key=lambda x: x[1]["points"], reverse=True)
-                    df_b = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"]} for i, (k, v) in enumerate(b_sorted)])
+                    b_sorted = sorted(b_standings.items(), key=lambda x: (x[1]["points"], x[1].get("kills", 0) - x[1].get("deaths", 0)), reverse=True)
+                    df_b = pd.DataFrame([{"순위": i+1, "팀명": k, "승점": v["points"], "승": v["wins"], "패": v["losses"], "득실차": v.get("kills", 0) - v.get("deaths", 0)} for i, (k, v) in enumerate(b_sorted)])
                     st.dataframe(df_b, use_container_width=True)
                     
                 # Render Matches
                 st.markdown("#### ⚔️ 조별 리그 경기 결과 입력")
-                c3, c4 = st.columns(2, vertical_alignment="bottom")
                 
-                with c3:
-                    st.markdown("**A조 경기**")
-                    a_matches = [m for m in s["matches"] if m["group"] == "A"]
-                    for m in a_matches:
-                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
-                        with col1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
-                        with col2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
-                        with col3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
-                        with col4:
+                rounds_dict = {}
+                for m in s["matches"]:
+                    r = m.get("round", 0)
+                    if r not in rounds_dict:
+                        rounds_dict[r] = []
+                    rounds_dict[r].append(m)
+                    
+                sorted_rounds = sorted(rounds_dict.keys())
+                for r in sorted_rounds:
+                    if r == 0:
+                        if len(sorted_rounds) > 1:
+                            st.markdown("**기타 매치**")
+                    else:
+                        st.markdown(f"**Round {r}**")
+                        
+                    for m in rounds_dict[r]:
+                        c1, c2, c3, c4, c5, c6, c7 = st.columns([2.0, 0.5, 2.0, 2.2, 1.2, 1.2, 0.9], vertical_alignment="bottom")
+                        with c1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
+                        with c2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
+                        with c3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
+                        with c4:
                             winner_opts = ["진행 전", m["team1"], m["team2"]]
                             current_winner = m["winner"] if m["winner"] else "진행 전"
-                            new_winner = st.selectbox("승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"grp_{s['session_id']}_{m['id']}", label_visibility="collapsed")
-                            if new_winner != current_winner:
-                                update_group_match(s["session_id"], m["id"], None if new_winner == "진행 전" else new_winner)
+                            new_winner = st.selectbox(f"Match {m['id']} 승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"grp_{s['session_id']}_{m['id']}", label_visibility="collapsed")
+                        with c5:
+                            w_kills = st.number_input("승리 킬", value=m.get("winner_kills", 0), min_value=0, step=1, key=f"grp_k_{s['session_id']}_{m['id']}")
+                        with c6:
+                            w_deaths = st.number_input("승리 데스", value=m.get("winner_deaths", 0), min_value=0, step=1, key=f"grp_d_{s['session_id']}_{m['id']}")
+                        with c7:
+                            if st.button("저장", key=f"grp_btn_{s['session_id']}_{m['id']}"):
+                                actual_winner = None if new_winner == "진행 전" else new_winner
+                                update_group_match(s["session_id"], m["id"], actual_winner, w_kills, w_deaths)
                                 st.rerun()
-                                
-                with c4:
-                    st.markdown("**B조 경기**")
-                    b_matches = [m for m in s["matches"] if m["group"] == "B"]
-                    for m in b_matches:
-                        col1, col2, col3, col4 = st.columns([2.5, 0.5, 2.5, 4.5], vertical_alignment="center")
-                        with col1: st.markdown(f"<div class='team-name-small'>{m['team1']}</div>", unsafe_allow_html=True)
-                        with col2: st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
-                        with col3: st.markdown(f"<div class='team-name-small'>{m['team2']}</div>", unsafe_allow_html=True)
-                        with col4:
-                            winner_opts = ["진행 전", m["team1"], m["team2"]]
-                            current_winner = m["winner"] if m["winner"] else "진행 전"
-                            new_winner = st.selectbox("승리팀", winner_opts, index=winner_opts.index(current_winner), key=f"grp_{s['session_id']}_{m['id']}", label_visibility="collapsed")
-                            if new_winner != current_winner:
-                                update_group_match(s["session_id"], m["id"], None if new_winner == "진행 전" else new_winner)
-                                st.rerun()
+                    if len(sorted_rounds) > 1 or r != 0:
+                        st.markdown("<hr style='margin: 10px 0; border: 1px solid #444;'>", unsafe_allow_html=True)
 
                 st.markdown("#### 🥇 조 1위 확정 및 결승전")
                 c5, c6 = st.columns(2, vertical_alignment="bottom")
