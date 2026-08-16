@@ -367,8 +367,10 @@ else:
             current_sub_pos = df[df['아이디'] == current_user_id_pos]['부 포지션'].values[0]
             current_special_pos = df[df['아이디'] == current_user_id_pos]['특별 포지션'].values[0]
             
+            special_pos_list = [p.strip() for p in str(current_special_pos).split(',')] if current_special_pos else []
+            special_pos_list = [p for p in special_pos_list if p]
+            
             positions_list = ["탑", "정글", "미드", "원딜", "서폿", ""]
-            special_positions_list = ["미지정", "오른#뿌우"]
             
             try:
                 main_index = positions_list.index(current_main_pos)
@@ -380,24 +382,36 @@ else:
             except ValueError:
                 sub_index = 0
 
-            col_p1, col_p2, col_p3 = st.columns([1, 1, 1], vertical_alignment="bottom")
+            col_p1, col_p2 = st.columns([1, 1], vertical_alignment="bottom")
             with col_p1:
                 new_main_pos = st.selectbox("주 포지션", positions_list, index=main_index, placeholder="주 포지션 선택")
             with col_p2:
                 new_sub_pos = st.selectbox("부 포지션", positions_list, index=sub_index, placeholder="부 포지션 선택")
-            with col_p3:
-                new_special_pos = st.selectbox("👑 특별 포지션 (오른#뿌우)", special_positions_list, index=1 if current_special_pos == "오른#뿌우" else 0)
+                
+            st.markdown("#### 👑 특별 포지션 관리")
+            st.caption("최대 3개까지 부여 가능합니다. 보유 중인 포지션은 'x'를 눌러 삭제할 수 있습니다.")
+            col_s1, col_s2 = st.columns([2, 1], vertical_alignment="bottom")
+            with col_s1:
+                keep_special_pos = st.multiselect("보유 중인 특별포지션 (유지할 항목만 남기세요)", options=special_pos_list, default=special_pos_list)
+            with col_s2:
+                add_special_pos = st.text_input("새 특별포지션 추가 (최대 6자)", max_chars=6)
                 
             if st.button("포지션 전체 적용", key="btn_pos", use_container_width=True, type="secondary"):
                 if new_main_pos is not None and new_sub_pos is not None:
-                    # Update Main/Sub
-                    database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
-                    # Update Special
-                    db_special_val = "" if new_special_pos == "미지정" else new_special_pos
-                    database.update_special_position(current_user_id_pos, db_special_val)
-                    
-                    st.session_state.toast_msg = ("포지션(일반 및 특별)이 성공적으로 변경되었습니다.", "✅")
-                    st.rerun()
+                    final_special_pos = keep_special_pos.copy()
+                    new_val = add_special_pos.strip()
+                    if new_val and new_val not in final_special_pos:
+                        final_special_pos.append(new_val)
+                        
+                    if len(final_special_pos) > 3:
+                        st.error("특별 포지션은 최대 3개까지만 부여할 수 있습니다.")
+                    else:
+                        database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
+                        db_special_val = ",".join(final_special_pos)
+                        database.update_special_position(current_user_id_pos, db_special_val)
+                        
+                        st.session_state.toast_msg = ("포지션(일반 및 특별)이 성공적으로 변경되었습니다.", "✅")
+                        st.rerun()
                 else:
                     st.warning("주/부 포지션을 모두 선택해주세요.")
         else:

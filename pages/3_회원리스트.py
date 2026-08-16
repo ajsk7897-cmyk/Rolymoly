@@ -51,6 +51,7 @@ else:
             "롤 아이디": full_id,
             "주 포지션": user_dict['main_pos'],
             "부 포지션": user_dict['sub_pos'],
+            "특별 포지션": user_dict.get('special_pos', ''),
             "솔로랭크": abbreviate_tier(user_dict['solo_tier']),
             "자유랭크": abbreviate_tier(user_dict['flex_tier']),
             "최종 파워스코어": final_score
