@@ -380,6 +380,17 @@ def render_tab2():
         
         def get_team_score(team):
             return sum([user_dict[uid][2] for uid in team.values()])
+            
+        def get_team_name(team_dict, default_name):
+            top_uid = team_dict.get("TOP")
+            if top_uid and top_uid in user_dict:
+                return f"{user_dict[top_uid][3]}팀"
+            return default_name
+
+        team_a_name = get_team_name(st.session_state.team_a_20, "Team A")
+        team_b_name = get_team_name(st.session_state.team_b_20, "Team B")
+        team_c_name = get_team_name(st.session_state.team_c_20, "Team C")
+        team_d_name = get_team_name(st.session_state.team_d_20, "Team D")
         
         scores = [
             get_team_score(st.session_state.team_a_20),
@@ -391,15 +402,15 @@ def render_tab2():
         col1, col2, col3, col4 = st.columns(4, vertical_alignment="bottom")
         
         teams_data = [
-            ("A", st.session_state.team_a_20, col1, "🔵"),
-            ("B", st.session_state.team_b_20, col2, "🔴"),
-            ("C", st.session_state.team_c_20, col3, "🟡"),
-            ("D", st.session_state.team_d_20, col4, "🟢")
+            (team_a_name, st.session_state.team_a_20, col1, "🔵", "A"),
+            (team_b_name, st.session_state.team_b_20, col2, "🔴", "B"),
+            (team_c_name, st.session_state.team_c_20, col3, "🟡", "C"),
+            (team_d_name, st.session_state.team_d_20, col4, "🟢", "D")
         ]
         
-        for idx, (name, team_dict, col, icon) in enumerate(teams_data):
+        for idx, (name, team_dict, col, icon, raw_name) in enumerate(teams_data):
             with col:
-                st.markdown(f"### {icon} Team {name} (총점: {scores[idx]}점)")
+                st.markdown(f"### {icon} {name} (총점: {scores[idx]}점)")
                 for role in roles:
                     uid = team_dict[role]
                     st.info(f"**{role}**: {user_dict[uid][0]}")
@@ -410,17 +421,24 @@ def render_tab2():
         st.markdown("#### 수동 팀 조정 (스왑)")
         swap_col1, swap_col2, swap_col3, swap_col4 = st.columns([2, 2, 2, 2], vertical_alignment="bottom")
         
+        team_keys = {
+            team_a_name: "a",
+            team_b_name: "b",
+            team_c_name: "c",
+            team_d_name: "d"
+        }
+        
         with swap_col1:
-            swap_team1 = st.selectbox("변경할 팀 1", ["Team A", "Team B", "Team C", "Team D"], key="swap_team1_20")
+            swap_team1 = st.selectbox("변경할 팀 1", list(team_keys.keys()), key="swap_team1_20")
         with swap_col2:
-            swap_team2 = st.selectbox("변경할 팀 2", ["Team A", "Team B", "Team C", "Team D"], index=1, key="swap_team2_20")
+            swap_team2 = st.selectbox("변경할 팀 2", list(team_keys.keys()), index=1, key="swap_team2_20")
         with swap_col3:
             swap_role_20 = st.selectbox("스왑할 라인 선택", roles, key="swap_role_20")
         with swap_col4:
             if st.button("라인 스왑하기", use_container_width=True, key="btn_swap_20"):
                 if swap_team1 != swap_team2:
-                    t1_key = f"team_{swap_team1[-1].lower()}_20"
-                    t2_key = f"team_{swap_team2[-1].lower()}_20"
+                    t1_key = f"team_{team_keys[swap_team1]}_20"
+                    t2_key = f"team_{team_keys[swap_team2]}_20"
                     
                     st.session_state[t1_key][swap_role_20], st.session_state[t2_key][swap_role_20] = \
                         st.session_state[t2_key][swap_role_20], st.session_state[t1_key][swap_role_20]
@@ -449,7 +467,7 @@ def render_tab2():
             st.session_state.confirm_step_1_20 = False
             
         match_format_20 = st.selectbox("대회 진행 방식", ["단판승부 (바로 DB 저장)", "풀리그 (모든 팀 상호 대전)", "토너먼트 (승자 진출)"], key="format_20")
-        winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름", "Team A", "Team B", "Team C", "Team D"], key="win_20")
+        winning_team = st.selectbox("우승 팀 (단판승부용 이력 보관)", ["아직 모름", team_a_name, team_b_name, team_c_name, team_d_name], key="win_20")
         
         if st.button("대회 세션 확정", type="primary", key="confirm_btn_20"):
             st.session_state.confirm_step_1_20 = True
@@ -461,10 +479,10 @@ def render_tab2():
                 if st.button("✅ 네, 확정합니다", type="primary", use_container_width=True, key="confirm_yes_20"):
                     players_data = []
                     for role in roles:
-                        players_data.append((st.session_state.team_a_20[role], "Team A", role, 0))
-                        players_data.append((st.session_state.team_b_20[role], "Team B", role, 0))
-                        players_data.append((st.session_state.team_c_20[role], "Team C", role, 0))
-                        players_data.append((st.session_state.team_d_20[role], "Team D", role, 0))
+                        players_data.append((st.session_state.team_a_20[role], team_a_name, role, 0))
+                        players_data.append((st.session_state.team_b_20[role], team_b_name, role, 0))
+                        players_data.append((st.session_state.team_c_20[role], team_c_name, role, 0))
+                        players_data.append((st.session_state.team_d_20[role], team_d_name, role, 0))
                     
                     if "단판승부" in match_format_20:
                         database.add_match("NORMAL", st.session_state.match_host_20, winning_team, players_data)
@@ -472,13 +490,13 @@ def render_tab2():
                     else:
                         fmt = "LEAGUE" if "풀리그" in match_format_20 else "TOURNAMENT"
                         teams = []
-                        teams_data = [
-                            (0, "Team A", st.session_state.team_a_20),
-                            (1, "Team B", st.session_state.team_b_20),
-                            (2, "Team C", st.session_state.team_c_20),
-                            (3, "Team D", st.session_state.team_d_20),
+                        teams_data_db = [
+                            (0, team_a_name, st.session_state.team_a_20),
+                            (1, team_b_name, st.session_state.team_b_20),
+                            (2, team_c_name, st.session_state.team_c_20),
+                            (3, team_d_name, st.session_state.team_d_20),
                         ]
-                        for tid, tname, tdict in teams_data:
+                        for tid, tname, tdict in teams_data_db:
                             members = []
                             for r, uid in tdict.items():
                                 members.append({'user_id': uid, 'points_spent': 0, 'role': r})
