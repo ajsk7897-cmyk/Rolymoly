@@ -353,17 +353,13 @@ else:
 
     st.markdown("---")
     with st.container(border=True):
-        st.markdown("#### 📝 포지션 정보 수정 (일반 & 특별)")
+        st.markdown("#### 📝 포지션 정보 수정")
         target_id_pos = st.selectbox("회원 선택 (포지션 수정)", user_options_list, key="pos_select", index=None, placeholder="아이디를 입력하세요")
         
         if target_id_pos:
             current_user_id_pos = int(target_id_pos.split(" - ")[0])
             current_main_pos = df[df['아이디'] == current_user_id_pos]['주 포지션'].values[0]
             current_sub_pos = df[df['아이디'] == current_user_id_pos]['부 포지션'].values[0]
-            current_special_pos = df[df['아이디'] == current_user_id_pos]['특별 포지션'].values[0]
-            
-            special_pos_list = [p.strip() for p in str(current_special_pos).split(',')] if current_special_pos else []
-            special_pos_list = [p for p in special_pos_list if p]
             
             positions_list = ["탑", "정글", "미드", "원딜", "서폿", ""]
             
