@@ -166,7 +166,7 @@ else:
         
         # Calculate symbols for 내전 보상
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        total_cats = auction_cats.get(user_dict['user_id'], 0) + user_dict.get('manual_cats', 0)
+        total_cats = auction_cats.get(user_dict['user_id'], 0)
         symbol_str = calculate_trophy_symbols_v2(total_points, total_cats)
         
         stats = user_stats.get(user_dict['user_id'], {'total': 0, 'wins': 0, 'win_rate': 0})
@@ -179,14 +179,12 @@ else:
             '내전 보상': symbol_str,
             '주 포지션': user_dict['main_pos'],
             '부 포지션': user_dict['sub_pos'],
-            '특별 포지션': user_dict.get('special_pos', ''),
             '내전 참가 판수': stats['total'],
             '내전 승률(%)': stats['win_rate'],
             '솔로랭크': abbreviate_tier(user_dict['solo_tier']),
             '자유랭크': abbreviate_tier(user_dict['flex_tier']),
             '기본 파워스코어': user_dict['power_score'],
             '수기 별': user_dict['manual_stars'],
-            '수기 고양이': user_dict.get('manual_cats', 0),
             '승리/패배': f"{stats['wins']}승 {stats['total'] - stats['wins']}패",
             '운영진 여부': user_dict['is_admin'],
             '내전스코어 증감': user_dict['match_bonus'],
@@ -262,22 +260,19 @@ else:
                 current_medals = (current_manual_points % 25) // 5
                 current_stars = current_manual_points % 5
                 
-                c_t, c_m, c_s, c_c = st.columns(4, vertical_alignment="bottom")
+                c_t, c_m, c_s = st.columns(3, vertical_alignment="bottom")
                 with c_t:
                     new_trophy = st.number_input("🏆 트로피", value=current_trophies, min_value=0, step=1)
                 with c_m:
                     new_medal = st.number_input("🎖️ 메달", value=current_medals, min_value=0, step=1)
                 with c_s:
                     new_star = st.number_input("⭐ 별", value=current_stars, min_value=0, step=1)
-                with c_c:
-                    new_cat = st.number_input("🐱 고양이", value=current_manual_cats, min_value=0, step=1)
                     
                 new_total_points = (new_trophy * 25) + (new_medal * 5) + new_star
                 
-                if st.button("포인트 및 고양이 적용", key="btn_star", use_container_width=True):
+                if st.button("포인트 적용", key="btn_star", use_container_width=True):
                     database.update_manual_stars(current_user_id_star, new_total_points)
-                    database.update_manual_cats(current_user_id_star, new_cat)
-                    st.session_state.toast_msg = (f"적용 완료! (별 {new_total_points}점, 고양이 {new_cat}마리)", "✅")
+                    st.session_state.toast_msg = (f"적용 완료! (별 {new_total_points}점)", "✅")
                     st.rerun()
             else:
                 st.info("회원을 선택해주세요.")
@@ -388,30 +383,12 @@ else:
             with col_p2:
                 new_sub_pos = st.selectbox("부 포지션", positions_list, index=sub_index, placeholder="부 포지션 선택")
                 
-            st.markdown("#### 👑 특별 포지션 관리")
-            st.caption("최대 3개까지 부여 가능합니다. 보유 중인 포지션은 'x'를 눌러 삭제할 수 있습니다.")
-            col_s1, col_s2 = st.columns([2, 1], vertical_alignment="bottom")
-            with col_s1:
-                keep_special_pos = st.multiselect("보유 중인 특별포지션 (유지할 항목만 남기세요)", options=special_pos_list, default=special_pos_list)
-            with col_s2:
-                add_special_pos = st.text_input("새 특별포지션 추가 (최대 6자)", max_chars=6)
-                
             if st.button("포지션 전체 적용", key="btn_pos", use_container_width=True, type="secondary"):
                 if new_main_pos is not None and new_sub_pos is not None:
-                    final_special_pos = keep_special_pos.copy()
-                    new_val = add_special_pos.strip()
-                    if new_val and new_val not in final_special_pos:
-                        final_special_pos.append(new_val)
-                        
-                    if len(final_special_pos) > 3:
-                        st.error("특별 포지션은 최대 3개까지만 부여할 수 있습니다.")
-                    else:
-                        database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
-                        db_special_val = ",".join(final_special_pos)
-                        database.update_special_position(current_user_id_pos, db_special_val)
-                        
-                        st.session_state.toast_msg = ("포지션(일반 및 특별)이 성공적으로 변경되었습니다.", "✅")
-                        st.rerun()
+                    database.update_user_positions(current_user_id_pos, new_main_pos, new_sub_pos)
+                    
+                    st.session_state.toast_msg = ("포지션이 성공적으로 변경되었습니다.", "✅")
+                    st.rerun()
                 else:
                     st.warning("주/부 포지션을 모두 선택해주세요.")
         else:

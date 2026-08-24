@@ -112,10 +112,6 @@ def calculate_trophy_symbols_v2(total_points: int, total_cats: int = 0) -> str:
     if stars > 0:
         symbol_str += "⭐" * stars
     
-    if remaining_cats > 0:
-        # 데이터프레임 내부에서는 HTML 크기 조절(span)이 텍스트로 노출되어, 기본 이모지로 대체합니다.
-        symbol_str += "🐱" * remaining_cats
-        
     if not symbol_str:
         symbol_str = "-"
     

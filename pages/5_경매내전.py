@@ -286,12 +286,11 @@ else:
             if medals > 0: symbol_str += "🎖️" * medals
             if stars > 0: symbol_str += "⭐" * stars
             if not symbol_str: symbol_str = "-"
-            special_pos_badge = f"<span style='font-size: 0.7em; background-color: #ff9800; color: white; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle;'>👑 {t_user[7]}</span>" if len(t_user) > 7 and t_user[7] else ""
 
             st.markdown(f"""
             <div style="background-color: #e8f4f8; padding: 15px; border-radius: 10px; border-left: 5px solid #1f77b4; margin-bottom: 1rem;">
                 <div style="font-size: 80%; line-height: 1.8; color: #333;">
-                    <span style="font-size: 1.2em; font-weight: bold; color: #000;">🎯 현재 대상: {t_user[0]}{special_pos_badge}</span><br>
+                    <span style="font-size: 1.2em; font-weight: bold; color: #000;">🎯 현재 대상: {t_user[0]}</span><br>
                     <div style="margin-left: 5px; margin-top: 5px;">
                         <b>🌟 우승 기록:</b> {symbol_str}<br>
                         <b>🏆 클랜 티어:</b> {t_user[3]}<br>

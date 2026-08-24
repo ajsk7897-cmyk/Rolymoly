@@ -39,7 +39,7 @@ else:
         
         # Calculate trophy symbols
         total_points = auction_points.get(user_dict['user_id'], 0) + user_dict['manual_stars']
-        total_cats = auction_cats.get(user_dict['user_id'], 0) + user_dict.get('manual_cats', 0)
+        total_cats = auction_cats.get(user_dict['user_id'], 0)
         symbol_str = calculate_trophy_symbols_v2(total_points, total_cats)
         
         role_str = "👑 운영진" if user_dict['is_admin'] == 1 else "일반"
@@ -51,7 +51,6 @@ else:
             "롤 아이디": full_id,
             "주 포지션": user_dict['main_pos'],
             "부 포지션": user_dict['sub_pos'],
-            "특별 포지션": user_dict.get('special_pos', ''),
             "솔로랭크": abbreviate_tier(user_dict['solo_tier']),
             "자유랭크": abbreviate_tier(user_dict['flex_tier']),
             "최종 파워스코어": final_score

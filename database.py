@@ -592,15 +592,26 @@ def recalculate_all_match_bonuses() -> None:
 
     # 새 로직 적용 기준일 (2026-08-12)
     NEW_LOGIC_CUTOFF = "2026-08-12"
+    SCORE_RESET_DATE = "2026-08-21"  # 파워스코어 증감 초기화 기준일
     EMERALD_THRESHOLD = 280  # Emerald 4 기준 점수
 
     valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
+
+    reset_applied = False
 
     for match in valid_matches:
         mid = str(match['id'])
         winning_team = match['winning_team']
         match_date = str(match.get('match_date', ''))[:10]
         use_new_logic = match_date >= NEW_LOGIC_CUTOFF
+
+        # 지정된 초기화 날짜 이후 첫 매치 시점에 점수 초기화
+        if not reset_applied and match_date >= SCORE_RESET_DATE:
+            for uid in user_state:
+                user_state[uid]['match_bonus'] = 0
+                user_state[uid]['last_win_bonus'] = 0
+            reset_applied = True
+
         mps = [mp for mp in match_players if str(mp['match_id']) == mid]
 
         for mp in mps:
@@ -627,6 +638,13 @@ def recalculate_all_match_bonuses() -> None:
                     else:
                         loss = state['last_win_bonus']
                         state['match_bonus'] = max(0, state['match_bonus'] - loss)
+
+    # 내전 기록이 아직 없지만 초기화 날짜가 지난 경우
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if not reset_applied and today_str >= SCORE_RESET_DATE:
+        for uid in user_state:
+            user_state[uid]['match_bonus'] = 0
+            user_state[uid]['last_win_bonus'] = 0
 
     updates = []
     def col_to_letter(col):
@@ -674,17 +692,27 @@ def get_historical_match_deltas() -> Dict[str, Dict[str, int]]:
 
     # 새 로직 적용 기준일 (2026-08-12)
     NEW_LOGIC_CUTOFF = "2026-08-12"
+    SCORE_RESET_DATE = "2026-08-21"  # 파워스코어 증감 초기화 기준일
     EMERALD_THRESHOLD = 280  # Emerald 4 기준 점수
 
     valid_matches = [m for m in matches if m.get('match_type') == 'NORMAL' and m.get('winning_team') not in ["", "아직 모름"]]
     
     deltas = {}
+    reset_applied = False
 
     for match in valid_matches:
         mid = str(match['id'])
         winning_team = match['winning_team']
         match_date = str(match.get('match_date', ''))[:10]
         use_new_logic = match_date >= NEW_LOGIC_CUTOFF
+        
+        # 지정된 초기화 날짜 이후 첫 매치 시점에 점수 초기화
+        if not reset_applied and match_date >= SCORE_RESET_DATE:
+            for uid in user_state:
+                user_state[uid]['match_bonus'] = 0
+                user_state[uid]['last_win_bonus'] = 0
+            reset_applied = True
+
         mps = [mp for mp in match_players if str(mp['match_id']) == mid]
         
         deltas[mid] = {}
