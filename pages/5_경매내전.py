@@ -222,7 +222,7 @@ if state:
                 if is_host:
                     col_t1, col_t2 = st.columns(2)
                     with col_t1:
-                        timer_input = st.selectbox("타이머 설정 (초)", [3, 5, 7, 10, 15, 20])
+                        timer_input = st.selectbox("최초 타이머 설정 (초)", [0, 3, 5, 7, 10, 15, 20], format_func=lambda x: "제한 없음" if x == 0 else f"{x}초")
                     with col_t2:
                         extend_input = st.selectbox("상위 입찰 시 연장 (초)", [0, 3, 5, 7, 10], format_func=lambda x: "사용 안 함" if x == 0 else f"{x}초 연장")
                     
@@ -230,7 +230,7 @@ if state:
                     with col_w1:
                         if st.button("▶️ 호가 접수 시작", type="primary", use_container_width=True):
                             current_state['auction_phase'] = "BIDDING"
-                            current_state['bid_end_time'] = time.time() + timer_input
+                            current_state['bid_end_time'] = (time.time() + timer_input) if timer_input > 0 else 0
                             current_state['extend_time'] = extend_input
                             save_auction_state(current_state)
                             st.rerun()
@@ -245,14 +245,17 @@ if state:
                     st.info("진행자가 경매 시작을 준비중입니다...")
                     
             elif phase == "BIDDING":
-                rem_time = max(0, int(current_state['bid_end_time'] - time.time()))
-                st.markdown(f"#### ⏳ 남은 시간: <span style='color:red;'>{rem_time}초</span>", unsafe_allow_html=True)
-                
-                # Auto resolve when time is up
-                if rem_time == 0 and is_host:
-                    current_state['auction_phase'] = "RESOLVED"
-                    save_auction_state(current_state)
-                    st.rerun()
+                if current_state.get('bid_end_time', 0) > 0:
+                    rem_time = max(0, int(current_state['bid_end_time'] - time.time()))
+                    st.markdown(f"#### ⏳ 남은 시간: <span style='color:red;'>{rem_time}초</span>", unsafe_allow_html=True)
+                    
+                    # Auto resolve when time is up
+                    if rem_time == 0 and is_host:
+                        current_state['auction_phase'] = "RESOLVED"
+                        save_auction_state(current_state)
+                        st.rerun()
+                else:
+                    st.markdown("#### ⏳ 남은 시간: <span style='color:blue;'>제한 없음 (수동 조기 마감)</span>", unsafe_allow_html=True)
 
                 # Status of bids (Open Racing Graph)
                 valid_bids = [b['amount'] for b in bids.values() if b['status'] == 'BID']

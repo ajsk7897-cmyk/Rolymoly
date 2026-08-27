@@ -45,10 +45,11 @@ def update_bid(team_idx, bid_points):
         
         # 새로운 최고가일 경우 타이머 연장
         extend_time = state.get('extend_time', 0)
-        if bid_points > max_bid and extend_time > 0:
+        bid_end = state.get('bid_end_time', 0)
+        if bid_points > max_bid and extend_time > 0 and bid_end > 0:
             current_time = time.time()
             new_end = current_time + extend_time
-            if new_end > state.get('bid_end_time', 0):
+            if new_end > bid_end:
                 state['bid_end_time'] = new_end
                 
         save_auction_state(state)
