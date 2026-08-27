@@ -220,7 +220,7 @@ if state:
                 st.info("진행자가 대상을 뽑기를 기다려주세요.")
             elif phase == "WAITING":
                 if is_host:
-                    timer_input = st.selectbox("타이머 설정 (초)", [3, 5, 7, 10])
+                    timer_input = st.selectbox("타이머 설정 (초)", [3, 5, 7, 10, 15, 20])
                     col_w1, col_w2 = st.columns(2)
                     with col_w1:
                         if st.button("▶️ 호가 접수 시작", type="primary", use_container_width=True):
@@ -248,13 +248,48 @@ if state:
                     save_auction_state(current_state)
                     st.rerun()
 
-                # Status of bids
+                # Status of bids (Open Racing Graph)
+                valid_bids = [b['amount'] for b in bids.values() if b['status'] == 'BID']
+                max_bid = max(valid_bids) if valid_bids else 0
+                scale_max = max(300, max_bid * 1.2) # Max scale is at least 300p, or 120% of max bid
+
+                html_bars = ""
                 for t in teams:
-                    bid_info = bids.get(str(t['id']))
-                    if bid_info:
-                        st.write(f"- {t['name']}: {'제출 완료 ✅' if bid_info['status'] == 'BID' else '미입찰 ❌'}")
+                    b = bids.get(str(t['id']))
+                    amt = b['amount'] if b and b['status'] == 'BID' else 0
+                    is_pass = b and b['status'] == 'PASS'
+                    
+                    pct = min(100, int((amt / scale_max) * 100))
+                    
+                    if amt > 0 and amt == max_bid:
+                        color = "linear-gradient(90deg, #FFD700 0%, #FF8C00 100%)" # Gold gradient
+                        text_color = "#000"
+                        medal = "👑"
+                        text_shadow = "none"
                     else:
-                        st.write(f"- {t['name']}: 생각 중... 🤔")
+                        color = "#1f77b4" # Blue
+                        text_color = "#fff"
+                        medal = ""
+                        text_shadow = "1px 1px 2px rgba(0,0,0,0.5)"
+                        
+                    if is_pass:
+                        bar_html = f'''<div style="color: #999; font-weight: bold; margin-bottom: 8px;">{t['name']}: 미입찰 (Pass)</div>'''
+                    else:
+                        display_text = f"{t['name']}: {amt}p {medal}" if amt > 0 else f"{t['name']}: 0p (고민 중🤔)"
+                        font_col = "#000" if amt == 0 else text_color
+                        shadow = "none" if amt == 0 else text_shadow
+                        bar_html = f'''
+                        <div style="margin-bottom: 8px;">
+                            <div style="width: 100%; background-color: #e0e0e0; border-radius: 5px; height: 28px; position: relative;">
+                                <div style="width: {pct}%; background: {color}; height: 100%; border-radius: 5px; transition: width 0.3s ease-in-out;"></div>
+                                <div style="position: absolute; top: 0; left: 10px; line-height: 28px; font-weight: 800; font-size: 14.5px; color: {font_col}; text-shadow: {shadow}; white-space: nowrap;">
+                                    {display_text}
+                                </div>
+                            </div>
+                        </div>
+                        '''
+                    html_bars += bar_html
+                st.markdown(html_bars, unsafe_allow_html=True)
                 
                 if is_team_leader:
                     my_bid_info = bids.get(str(my_team_id))
