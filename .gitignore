@@ -13,3 +13,7 @@ __pycache__/
 .venv
 venv/
 env/
+
+# Temp Data
+shared_auction_state.json
+tournaments.json

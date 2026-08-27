@@ -31,6 +31,21 @@ st.markdown("""
     text-align: center;
     font-weight: bold;
 }
+/* 중첩된 Expander (팀 구성 보기) 강조 스타일 */
+div[data-testid="stExpander"] div[data-testid="stExpander"] details summary {
+    background-color: #e8f4f8 !important;
+    border-radius: 8px !important;
+    border: 2px solid #1f77b4 !important;
+    padding: 10px !important;
+}
+div[data-testid="stExpander"] div[data-testid="stExpander"] details summary p {
+    color: #0056b3 !important;
+    font-size: 1.15em !important;
+    font-weight: 900 !important;
+}
+div[data-testid="stExpander"] div[data-testid="stExpander"] details summary svg {
+    color: #0056b3 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,7 +64,32 @@ if ongoing_sessions:
             fmt_str = "토너먼트 (승자 진출)"
         s_date = datetime.fromtimestamp(int(s["session_id"])).strftime("%y년 %m월 %d일 %H:%M")
         match_type_str = "일반" if s.get("match_type") == "NORMAL" else "경매"
+        
+        all_users = database.get_all_users()
+        uid_to_name = {str(u['id']): f"{u['riot_id']}#{u['tag_line']}" for u in all_users}
+        
         with st.expander(f"[{match_type_str}] [{fmt_str}] {s_date} - 진행자: {s['host']}", expanded=True):
+            with st.expander("👥 전체 팀 구성 보기", expanded=False):
+                team_dict = {t["name"]: [] for t in s.get("teams", [])}
+                for pd_item in s.get("players_data", []):
+                    uid, t_name, role, spent = pd_item
+                    display_name = uid_to_name.get(str(uid), str(uid))
+                    if t_name in team_dict:
+                        team_dict[t_name].append({"닉네임": display_name, "역할/포지션": role})
+                
+                t_names = list(team_dict.keys())
+                for i in range(0, len(t_names), 2):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if i < len(t_names):
+                            st.markdown(f"**{t_names[i]}**")
+                            st.dataframe(pd.DataFrame(team_dict[t_names[i]]), use_container_width=True, hide_index=True)
+                    with c2:
+                        if i + 1 < len(t_names):
+                            st.markdown(f"**{t_names[i+1]}**")
+                            st.dataframe(pd.DataFrame(team_dict[t_names[i+1]]), use_container_width=True, hide_index=True)
+            st.markdown("---")
+
             if s["format"] == "LEAGUE":
                 # Render Standings
                 st.markdown("#### 🏆 조별 순위표")
