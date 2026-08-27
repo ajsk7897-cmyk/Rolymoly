@@ -220,12 +220,18 @@ if state:
                 st.info("진행자가 대상을 뽑기를 기다려주세요.")
             elif phase == "WAITING":
                 if is_host:
-                    timer_input = st.selectbox("타이머 설정 (초)", [3, 5, 7, 10, 15, 20])
+                    col_t1, col_t2 = st.columns(2)
+                    with col_t1:
+                        timer_input = st.selectbox("타이머 설정 (초)", [3, 5, 7, 10, 15, 20])
+                    with col_t2:
+                        extend_input = st.selectbox("상위 입찰 시 연장 (초)", [0, 3, 5, 7, 10], format_func=lambda x: "사용 안 함" if x == 0 else f"{x}초 연장")
+                    
                     col_w1, col_w2 = st.columns(2)
                     with col_w1:
                         if st.button("▶️ 호가 접수 시작", type="primary", use_container_width=True):
                             current_state['auction_phase'] = "BIDDING"
                             current_state['bid_end_time'] = time.time() + timer_input
+                            current_state['extend_time'] = extend_input
                             save_auction_state(current_state)
                             st.rerun()
                     with col_w2:

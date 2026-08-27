@@ -32,11 +32,25 @@ def update_bid(team_idx, bid_points):
     if state and state.get('auction_phase') == 'BIDDING':
         if 'current_bids' not in state:
             state['current_bids'] = {}
+            
+        # 현재 최고가 확인
+        valid_bids = [b['amount'] for b in state['current_bids'].values() if b['status'] == 'BID']
+        max_bid = max(valid_bids) if valid_bids else 0
+            
         state['current_bids'][str(team_idx)] = {
             'status': 'BID',
             'amount': bid_points,
             'time': time.time()
         }
+        
+        # 새로운 최고가일 경우 타이머 연장
+        extend_time = state.get('extend_time', 0)
+        if bid_points > max_bid and extend_time > 0:
+            current_time = time.time()
+            new_end = current_time + extend_time
+            if new_end > state.get('bid_end_time', 0):
+                state['bid_end_time'] = new_end
+                
         save_auction_state(state)
 
 def update_pass(team_idx):
