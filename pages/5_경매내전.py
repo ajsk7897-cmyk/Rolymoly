@@ -24,7 +24,7 @@ div[data-testid="stToast"] { font-size: 1.1rem !important; background-color: #e6
 [data-testid="stExpander"] details summary > * { flex: 1 !important; text-align: center !important; display: flex !important; justify-content: center !important; }
 [data-testid="stExpander"] details summary svg { flex: 0 !important; }
 [data-testid="stExpander"] details summary p { width: 100% !important; text-align: center !important; font-weight: bold !important; display: inline-block !important; }
-[data-testid="stButton"] p { white-space: pre-wrap !important; }
+[data-testid="stButton"] p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,9 +65,9 @@ def team_leader_bid_fragment(my_team_id, my_team_points):
         bid_val = st.number_input("입찰 포인트", min_value=0, max_value=my_team_points, value=current_val, step=10, key=f"bid_input_{my_team_id}")
         col_b1, col_b2 = st.columns(2)
         with col_b1:
-            submit_bid = st.form_submit_button("입찰하기 / 금액수정", type="primary", use_container_width=True)
+            submit_bid = st.form_submit_button("입찰 / 수정", type="primary", use_container_width=True)
         with col_b2:
-            submit_pass = st.form_submit_button("해당 턴 미입찰 (Pass)", use_container_width=True)
+            submit_pass = st.form_submit_button("패스 (Pass)", use_container_width=True)
         
         if submit_bid:
             update_bid(my_team_id, bid_val)
@@ -204,7 +204,7 @@ if state:
                             if m['role'] == 'Leader': continue
                             raw_name = user_dict[m['user_id']][0].split(' (')[0].split('#')[0]
                             if '] ' in raw_name: raw_name = raw_name.split('] ')[-1]
-                            html += f"<div style='font-size: 0.75rem; color: #000; overflow: hidden; text-overflow: ellipsis;'>- {raw_name} ({m['points_spent']})</div>"
+                            html += f"<div style='font-size: 0.75rem; color: #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>- {raw_name} ({m['points_spent']})</div>"
                         html += "</div></div>"
                         st.markdown(html, unsafe_allow_html=True)
                         
@@ -259,7 +259,7 @@ if state:
                     
                     col_w1, col_w2 = st.columns(2)
                     with col_w1:
-                        if st.button("▶️ 호가 접수 시작", type="primary", use_container_width=True):
+                        if st.button("▶️ 입찰 시작", type="primary", use_container_width=True):
                             current_state['auction_phase'] = "BIDDING"
                             current_state['bid_end_time'] = (time.time() + timer_input) if timer_input > 0 else 0
                             current_state['extend_time'] = extend_input
@@ -322,7 +322,7 @@ if state:
                         <div style="margin-bottom: 8px;">
                             <div style="width: 100%; background-color: #e0e0e0; border-radius: 5px; height: 28px; position: relative;">
                                 <div style="width: {pct}%; background: {color}; height: 100%; border-radius: 5px; transition: width 0.3s ease-in-out;"></div>
-                                <div style="position: absolute; top: 0; left: 10px; line-height: 28px; font-weight: 800; font-size: 14.5px; color: {font_col}; text-shadow: {shadow}; white-space: nowrap;">
+                                <div style="position: absolute; top: 0; left: 10px; right: 10px; overflow: hidden; text-overflow: ellipsis; line-height: 28px; font-weight: 800; font-size: 14.5px; color: {font_col}; text-shadow: {shadow}; white-space: nowrap;">
                                     {display_text}
                                 </div>
                             </div>
@@ -338,12 +338,12 @@ if state:
                 if is_host:
                     col_h1, col_h2 = st.columns(2)
                     with col_h1:
-                        if st.button("조기 마감 (결과 보기)", use_container_width=True):
+                        if st.button("조기 마감", use_container_width=True):
                             current_state['auction_phase'] = "RESOLVED"
                             save_auction_state(current_state)
                             st.rerun()
                     with col_h2:
-                        if st.button("🔄 재입찰 (타이머 다시 시작)", use_container_width=True):
+                        if st.button("🔄 재입찰", use_container_width=True):
                             current_state['auction_phase'] = "WAITING"
                             current_state['current_bids'] = {}
                             save_auction_state(current_state)
@@ -400,7 +400,7 @@ if state:
                         save_auction_state(current_state)
                         st.rerun()
                         
-                    if st.button("🔄 재입찰 (타이머 다시 시작)"):
+                    if st.button("🔄 재입찰"):
                         current_state['auction_phase'] = "WAITING"
                         current_state['current_bids'] = {}
                         save_auction_state(current_state)

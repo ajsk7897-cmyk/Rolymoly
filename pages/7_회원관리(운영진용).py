@@ -206,11 +206,16 @@ else:
     
     st.markdown("""
     <style>
-    /* 컬럼 내 테두리 컨테이너 위아래 끝단 맞춤 */
-    [data-testid="column"] > [data-testid="stVerticalBlockBorderWrapper"] {
+    /* 행 전체를 flexbox로 만들어서 컬럼 높이를 동일하게 맞춤 */
+    div[data-testid="stHorizontalBlock"] {
+        align-items: stretch !important;
+    }
+    /* 컬럼 내부 컨테이너가 100% 채워지도록 함 */
+    div[data-testid="column"] > div[data-testid="stVerticalBlockBorderWrapper"] {
         height: 100% !important;
     }
-    [data-testid="column"] > [data-testid="stVerticalBlockBorderWrapper"] > div[data-testid="stVerticalBlock"] {
+    /* 컨테이너 내부의 요소들이 위아래로 꽉 차도록 배치 */
+    div[data-testid="column"] > div[data-testid="stVerticalBlockBorderWrapper"] > div[data-testid="stVerticalBlock"] {
         height: 100% !important;
         display: flex;
         flex-direction: column;
