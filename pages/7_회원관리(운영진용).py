@@ -206,20 +206,9 @@ else:
     
     st.markdown("""
     <style>
-    /* 행 전체를 flexbox로 만들어서 컬럼 높이를 동일하게 맞춤 */
-    div[data-testid="stHorizontalBlock"] {
-        align-items: stretch !important;
-    }
-    /* 컬럼 내부 컨테이너가 100% 채워지도록 함 */
-    div[data-testid="column"] > div[data-testid="stVerticalBlockBorderWrapper"] {
-        height: 100% !important;
-    }
-    /* 컨테이너 내부의 요소들이 위아래로 꽉 차도록 배치 */
-    div[data-testid="column"] > div[data-testid="stVerticalBlockBorderWrapper"] > div[data-testid="stVerticalBlock"] {
-        height: 100% !important;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+    /* 내부 여백 조정 */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 1rem;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -227,7 +216,7 @@ else:
     col1, col2 = st.columns(2, vertical_alignment="top")
     
     with col1:
-        with st.container(border=True):
+        with st.container(height=360, border=True):
             st.markdown("#### 🔹 파워스코어 수기 수정")
             target_id_score = st.selectbox("회원 선택 (수정)", user_options_list, key="score_select", index=None, placeholder="아이디를 입력하세요")
             
@@ -252,7 +241,7 @@ else:
                     st.warning("회원과 티어를 모두 선택해주세요.")
 
     with col2:
-        with st.container(border=True):
+        with st.container(height=360, border=True):
             st.markdown("#### 🔹 우승 기호 포인트 설정")
             target_id_star = st.selectbox("회원 선택 (포인트 설정)", user_options_list, key="star_select", index=None, placeholder="아이디를 입력하세요")
             
@@ -295,7 +284,7 @@ else:
     col3, col4 = st.columns(2, vertical_alignment="top")
     
     with col3:
-        with st.container(border=True):
+        with st.container(height=300, border=True):
             st.markdown("#### 🔹 내전 증감 스코어 수기 조정")
             target_id_bonus = st.selectbox("회원 선택 (증감 수정)", user_options_list, key="bonus_select", index=None, placeholder="아이디를 입력하세요")
             
@@ -323,7 +312,7 @@ else:
                 """, unsafe_allow_html=True)
 
     with col4:
-        with st.container(border=True):
+        with st.container(height=300, border=True):
             st.markdown("#### 🛡️ 운영진 권한 설정")
             target_id_admin = st.selectbox("회원 선택 (권한 변경)", user_options_list, key="admin_select", index=None, placeholder="아이디를 입력하세요")
             
@@ -343,7 +332,7 @@ else:
     col5, col6 = st.columns(2, vertical_alignment="top")
             
     with col5:
-        with st.container(border=True):
+        with st.container(height=260, border=True):
             st.markdown("#### 🔹 강제 탈퇴")
             target_id_kick = st.selectbox("회원 선택 (강퇴)", user_options_list, key="kick_select", index=None, placeholder="아이디를 입력하세요")
             st.markdown("<br>", unsafe_allow_html=True) # 줄 맞춤용 공백
@@ -357,7 +346,7 @@ else:
                     st.warning("회원을 선택해주세요.")
 
     with col6:
-        with st.container(border=True):
+        with st.container(height=260, border=True):
             st.markdown("#### 🔹 아이디 변경")
             target_id_change = st.selectbox("회원 선택 (아이디 변경)", user_options_list, key="id_change_select", index=None, placeholder="아이디를 입력하세요")
             
