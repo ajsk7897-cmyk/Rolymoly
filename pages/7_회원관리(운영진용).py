@@ -351,6 +351,30 @@ else:
                 else:
                     st.warning("회원을 선택해주세요.")
 
+    with col6:
+        with st.container(border=True):
+            st.markdown("#### 🔹 아이디 변경")
+            target_id_change = st.selectbox("회원 선택 (아이디 변경)", user_options_list, key="id_change_select", index=None, placeholder="아이디를 입력하세요")
+            
+            col_id, col_tag = st.columns([2, 1], vertical_alignment="bottom")
+            with col_id:
+                new_riot_id = st.text_input("새 닉네임", placeholder="새 닉네임 입력")
+            with col_tag:
+                new_tag_line = st.text_input("새 태그", placeholder="kr1")
+                
+            if st.button("아이디 변경 및 티어 갱신", key="btn_id_change", use_container_width=True):
+                if target_id_change and new_riot_id and new_tag_line:
+                    user_id = int(target_id_change.split(" - ")[0])
+                    database.update_user_riot_id(user_id, new_riot_id, new_tag_line)
+                    with st.spinner("변경된 닉네임으로 티어 정보를 다시 가져오는 중..."):
+                        solo_tier, flex_tier, power_score = fetch_tier_data(new_riot_id, new_tag_line)
+                        database.update_user_tier_info(user_id, solo_tier, flex_tier, power_score)
+                    
+                    st.session_state.toast_msg = (f"아이디가 {new_riot_id}#{new_tag_line}로 변경되고 티어가 초기화되었습니다.", "✅")
+                    st.rerun()
+                else:
+                    st.warning("회원 선택 및 변경할 닉네임/태그를 모두 입력해주세요.")
+
     st.markdown("---")
     with st.container(border=True):
         st.markdown("#### 📝 포지션 정보 수정")

@@ -365,6 +365,22 @@ def update_admin_role(user_id: int, is_admin: int) -> bool:
         logger.error(f"관리자 권한 업데이트 실패: {e}")
         return False
 
+def update_user_riot_id(user_id: int, new_riot_id: str, new_tag_line: str) -> bool:
+    """사용자 라이엇 ID 및 태그라인 변경"""
+    try:
+        users_sheet = get_worksheet("users")
+        cell = users_sheet.find(str(user_id), in_column=1)
+        if cell:
+            users_sheet.update_cell(cell.row, 2, new_riot_id)
+            users_sheet.update_cell(cell.row, 3, f"'{new_tag_line}")
+            clear_cache()
+            logger.info(f"라이엇 ID 변경 완료: ID {user_id} -> {new_riot_id}#{new_tag_line}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"라이엇 ID 변경 실패: {e}")
+        return False
+
 def kick_user(user_id: int) -> bool:
     """사용자 강퇴"""
     try:

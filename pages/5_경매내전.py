@@ -45,6 +45,37 @@ def get_formatted_users_for_auction(users):
 
 user_options, user_dict = get_formatted_users_for_auction(approved_users)
 
+@st.fragment
+def team_leader_bid_fragment(my_team_id, my_team_points):
+    latest_state = load_auction_state()
+    latest_bids = latest_state.get('current_bids', {})
+    my_bid_info = latest_bids.get(str(my_team_id))
+
+    if my_bid_info and my_bid_info['status'] == 'BID':
+        st.success(f"✅ 현재 {my_bid_info['amount']}p 제출 완료! (남은 시간 동안 재입찰 가능)")
+    elif my_bid_info and my_bid_info['status'] == 'PASS':
+        st.warning("❌ 미입찰(Pass) 상태입니다. (남은 시간 동안 다시 입찰 가능)")
+
+    st.markdown("---")
+    
+    current_val = my_bid_info['amount'] if my_bid_info and my_bid_info['status'] == 'BID' else 0
+    current_val = min(current_val, my_team_points)
+    
+    with st.form(key=f"bid_form_{my_team_id}", border=False):
+        bid_val = st.number_input("입찰 포인트", min_value=0, max_value=my_team_points, value=current_val, step=10, key=f"bid_input_{my_team_id}")
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            submit_bid = st.form_submit_button("입찰하기 / 금액수정", type="primary", use_container_width=True)
+        with col_b2:
+            submit_pass = st.form_submit_button("해당 턴 미입찰 (Pass)", use_container_width=True)
+        
+        if submit_bid:
+            update_bid(my_team_id, bid_val)
+            st.rerun(scope="fragment")
+        if submit_pass:
+            update_pass(my_team_id)
+            st.rerun(scope="fragment")
+
 state = load_auction_state()
 
 # ----------------- 1. 역할 선택 (Role Selection) -----------------
@@ -301,29 +332,8 @@ if state:
                 st.markdown(html_bars, unsafe_allow_html=True)
                 
                 if is_team_leader:
-                    my_bid_info = bids.get(str(my_team_id))
-                    if my_bid_info and my_bid_info['status'] == 'BID':
-                        st.success(f"✅ 현재 {my_bid_info['amount']}p 제출 완료! (남은 시간 동안 재입찰 가능)")
-                    elif my_bid_info and my_bid_info['status'] == 'PASS':
-                        st.warning("❌ 미입찰(Pass) 상태입니다. (남은 시간 동안 다시 입찰 가능)")
-
-                    st.markdown("---")
                     my_team_points = next(t['points'] for t in teams if t['id'] == my_team_id)
-                    
-                    current_val = my_bid_info['amount'] if my_bid_info and my_bid_info['status'] == 'BID' else 0
-                    # Prevent current_val from exceeding my_team_points (in case of bugs)
-                    current_val = min(current_val, my_team_points)
-                    
-                    bid_val = st.number_input("입찰 포인트", min_value=0, max_value=my_team_points, value=current_val, step=10, key="bid_input")
-                    col_b1, col_b2 = st.columns(2)
-                    with col_b1:
-                        if st.button("입찰하기 / 금액수정", type="primary", use_container_width=True):
-                            update_bid(my_team_id, bid_val)
-                            st.rerun()
-                    with col_b2:
-                        if st.button("해당 턴 미입찰 (Pass)", use_container_width=True):
-                            update_pass(my_team_id)
-                            st.rerun()
+                    team_leader_bid_fragment(my_team_id, my_team_points)
 
                 if is_host:
                     col_h1, col_h2 = st.columns(2)
