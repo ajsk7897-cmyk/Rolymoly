@@ -232,6 +232,17 @@ else:
     [data-testid="stButton"] button {
         overflow: hidden !important;
     }
+    /* Style secondary buttons to have a light blue background */
+    [data-testid="stButton"] button:not([kind="primary"]) {
+        background-color: #f0f8ff !important;
+        border: 1px solid #b3d4fc !important;
+        color: #003366 !important;
+    }
+    [data-testid="stButton"] button:not([kind="primary"]):hover {
+        background-color: #e0f0ff !important;
+        border: 1px solid #80bfff !important;
+        color: #002244 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
