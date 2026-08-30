@@ -222,7 +222,15 @@ else:
     }
     /* Button text line break support */
     [data-testid="stButton"] p {
-        white-space: pre-wrap !important;
+        white-space: pre !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        width: 100% !important;
+        line-height: 1.5 !important;
+    }
+    /* Ensure button containers also clip overflow properly */
+    [data-testid="stButton"] button {
+        overflow: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
