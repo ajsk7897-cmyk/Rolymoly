@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database
-from utils.discord import send_discord_webhook
 
 st.set_page_config(page_title="멸망전 (Deathmatch)", page_icon="⚔️", layout="wide")
 
@@ -213,8 +212,6 @@ with tab2:
                                         
                                         if st.form_submit_button("결과 저장", type="primary", use_container_width=True):
                                             if database.update_deathmatch_result(match['id'], ka, kb, win_team, is_forfeit):
-                                                msg = f"[멸망전 결과] {match['team_a']} vs {match['team_b']} 경기 종료! 승리: {win_team} (기권: {is_forfeit})"
-                                                send_discord_webhook(msg)
                                                 st.success("결과가 저장되었습니다.")
                                                 st.rerun()
                                         
@@ -269,8 +266,6 @@ with tab2:
                                                 st.error(f"{t_b}은(는) 이 시간에 이미 다른 매치가 있습니다.")
                                             else:
                                                 if database.add_deathmatch_schedule(selected_date, time_slot, t_a, t_b):
-                                                    msg = f"📅 [멸망전 매치성사] {selected_date} {time_slot} | {t_a} 🆚 {t_b}"
-                                                    send_discord_webhook(msg)
                                                     st.toast("✅ 매치가 성공적으로 등록되었습니다!")
                                                     st.rerun()
 
