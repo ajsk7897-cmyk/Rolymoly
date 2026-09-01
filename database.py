@@ -941,6 +941,8 @@ def join_deathmatch_schedule(match_id: int, team_b: str) -> bool:
         logger.error(f"멸망전 매치 참가 실패: {e}")
         return False
 
+
+
 def reset_deathmatch_result(match_id: int) -> bool:
     try:
         sh = get_worksheet("deathmatch_schedules")
@@ -951,5 +953,5 @@ def reset_deathmatch_result(match_id: int) -> bool:
             return True
         return False
     except Exception as e:
-        logger.error(f"멸망??결과 리셋 ?�패: {e}")
+        logger.error(f"멸망전 결과 리셋 실패: {e}")
         return False
