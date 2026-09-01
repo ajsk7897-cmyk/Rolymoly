@@ -190,8 +190,20 @@ with tab1:
             score = name_to_score[name]
             return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
             
-        # 2. 정규화(공백, 대소문자 제거) 일치
         norm_name = normalize_name(name)
+        
+        # 수동 맵핑 (한영 혼용 등 Fuzzy 매칭으로 잡기 힘든 케이스)
+        custom_aliases = {
+            "노다이": "nodiemebuss",
+            "봄쉘": "bombshell"
+        }
+        
+        if norm_name in custom_aliases:
+            norm_name = custom_aliases[norm_name]
+        elif name in custom_aliases:
+            norm_name = custom_aliases[name]
+            
+        # 2. 정규화(공백, 대소문자 제거) 일치
         if norm_name in normalized_name_to_score:
             score = normalized_name_to_score[norm_name]
             return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
