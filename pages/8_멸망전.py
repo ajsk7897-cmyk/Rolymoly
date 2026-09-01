@@ -156,6 +156,24 @@ with tab1:
     st.markdown("---")
     st.subheader("🛡️ 참가 팀 로스터")
     
+    # ------------------- 파워스코어 매핑 생성 -------------------
+    from utils.helpers import unpack_user_data, calculate_user_scores
+    approved_users = database.get_all_approved_users()
+    
+    name_to_score = {}
+    for u in approved_users:
+        u_dict = unpack_user_data(u)
+        _, final_score, _ = calculate_user_scores(u_dict)
+        name_to_score[u_dict['riot_id']] = final_score
+        name_to_score[f"{u_dict['riot_id']}#{u_dict['tag_line']}"] = final_score
+        
+    def score_tag(name):
+        score = name_to_score.get(name)
+        if score is not None:
+            return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
+        return ''
+    # --------------------------------------------------------
+    
     cols = st.columns(3)
     for idx, t_name in enumerate(team_names):
         roster = teams_data[t_name]
@@ -165,11 +183,11 @@ with tab1:
                 <h4 style="margin-top: 0; color: #1f77b4; text-align: center;">{t_name}</h4>
                 <hr style="margin: 10px 0;">
                 <div style="display: grid; grid-template-columns: 40px 1fr; gap: 5px; font-size: 0.95em;">
-                    <div style="font-weight: bold; color: #555;">TOP</div><div>{roster['TOP']} {'👑' if roster['Leader']=='TOP' else ''}</div>
-                    <div style="font-weight: bold; color: #555;">JG</div><div>{roster['JG']} {'👑' if roster['Leader']=='JG' else ''}</div>
-                    <div style="font-weight: bold; color: #555;">MID</div><div>{roster['MID']} {'👑' if roster['Leader']=='MID' else ''}</div>
-                    <div style="font-weight: bold; color: #555;">AD</div><div>{roster['AD']} {'👑' if roster['Leader']=='AD' else ''}</div>
-                    <div style="font-weight: bold; color: #555;">SUP</div><div>{roster['SUP']} {'👑' if roster['Leader']=='SUP' else ''}</div>
+                    <div style="font-weight: bold; color: #555;">TOP</div><div>{roster['TOP']}{score_tag(roster['TOP'])} {'👑' if roster['Leader']=='TOP' else ''}</div>
+                    <div style="font-weight: bold; color: #555;">JG</div><div>{roster['JG']}{score_tag(roster['JG'])} {'👑' if roster['Leader']=='JG' else ''}</div>
+                    <div style="font-weight: bold; color: #555;">MID</div><div>{roster['MID']}{score_tag(roster['MID'])} {'👑' if roster['Leader']=='MID' else ''}</div>
+                    <div style="font-weight: bold; color: #555;">AD</div><div>{roster['AD']}{score_tag(roster['AD'])} {'👑' if roster['Leader']=='AD' else ''}</div>
+                    <div style="font-weight: bold; color: #555;">SUP</div><div>{roster['SUP']}{score_tag(roster['SUP'])} {'👑' if roster['Leader']=='SUP' else ''}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
