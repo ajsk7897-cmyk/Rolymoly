@@ -955,3 +955,20 @@ def reset_deathmatch_result(match_id: int) -> bool:
     except Exception as e:
         logger.error(f"멸망전 결과 리셋 실패: {e}")
         return False
+
+def register_deathmatch_result(team_a: str, team_b: str, w1: str, ka1: int, kb1: int, w2: str, ka2: int, kb2: int, is_forfeit: bool) -> bool:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        next_id = _get_next_id(sh)
+        from datetime import datetime
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        
+        forfeit_str = "TRUE" if is_forfeit else "FALSE"
+        sh.append_row([
+            next_id, today_str, "", team_a, team_b, "COMPLETED", w1, ka1, kb1, w2, ka2, kb2, forfeit_str
+        ])
+        clear_cache()
+        return True
+    except Exception as e:
+        logger.error(f"멸망전 결과 직접 등록 실패: {e}")
+        return False
