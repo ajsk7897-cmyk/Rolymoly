@@ -911,9 +911,6 @@ def update_deathmatch_result(match_id: int, w1: str, ka1: int, kb1: int, w2: str
     except Exception as e:
         logger.error(f"멸망전 결과 업데이트 실패: {e}")
         return False
-    except Exception as e:
-        logger.error(f"멸망전 결과 업데이트 실패: {e}")
-        return False
 
 def delete_deathmatch_schedule(match_id: int) -> bool:
     try:
@@ -954,9 +951,6 @@ def reset_deathmatch_result(match_id: int) -> bool:
             sh.update(f"F{cell.row}:M{cell.row}", [["SCHEDULED", "", "", "", "", "", "", "FALSE"]])
             clear_cache()
             return True
-        return False
-    except Exception as e:
-        logger.error(f"멸망전 결과 리셋 실패: {e}")
         return False
     except Exception as e:
         logger.error(f"멸망전 결과 리셋 실패: {e}")
