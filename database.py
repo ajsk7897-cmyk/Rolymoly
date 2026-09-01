@@ -841,3 +841,87 @@ def get_auction_points_by_user() -> Tuple[Dict[int, int], Dict[int, int]]:
                     
     return points, cats
 
+
+
+# ==========================================
+# 멸망전 (Deathmatch) 관련 DB 로직
+# ==========================================
+
+DEATHMATCH_TEAMS = {
+    "벌꿀찡명 팀": {"TOP": "벌꿀찡명", "JG": "손뚜깡", "MID": "수빈", "AD": "總身彫り", "SUP": "괴조딸", "Leader": "TOP"},
+    "마묵 팀": {"TOP": "siat", "JG": "무력", "MID": "팬더가서자", "AD": "마묵", "SUP": "사연", "Leader": "AD"},
+    "지배좌 팀": {"TOP": "홍시", "JG": "비온뒤의굳음", "MID": "지배좌", "AD": "부리부리", "SUP": "라라루루", "Leader": "MID"},
+    "치원 팀": {"TOP": "암베사", "JG": "오도봉구", "MID": "원웅언니", "AD": "치원", "SUP": "혜오니야", "Leader": "AD"},
+    "치코 팀": {"TOP": "들기름무빙", "JG": "평파사", "MID": "메이쥐", "AD": "치코", "SUP": "슬모띵", "Leader": "AD"},
+    "건동김 팀": {"TOP": "건동김", "JG": "용트름장인", "MID": "노다이", "AD": "범상", "SUP": "봄쉘", "Leader": "TOP"},
+    "달고나 팀": {"TOP": "박두리안", "JG": "flash", "MID": "달고나", "AD": "대답", "SUP": "무뚝뚝", "Leader": "MID"},
+    "개화 팀": {"TOP": "승연뽕따이", "JG": "경먀", "MID": "곰 조련사", "AD": "여름싫다", "SUP": "개화", "Leader": "SUP"},
+    "겨울 팀": {"TOP": "잘가자요", "JG": "연차쓸래요", "MID": "한방", "AD": "겨울", "SUP": "정현", "Leader": "AD"},
+}
+
+def get_deathmatch_teams() -> dict:
+    return DEATHMATCH_TEAMS
+
+def ensure_deathmatch_sheet():
+    """deathmatch_schedules 시트가 없으면 생성"""
+    try:
+        sh = get_sheet()
+        worksheets = [ws.title for ws in sh.worksheets()]
+        if "deathmatch_schedules" not in worksheets:
+            ws = sh.add_worksheet("deathmatch_schedules", rows=1000, cols=10)
+            ws.append_row(["id", "match_date", "time_slot", "team_a", "team_b", "status", "winner", "team_a_kills", "team_b_kills", "is_forfeit"])
+            logger.info("deathmatch_schedules 시트가 생성되었습니다.")
+    except Exception as e:
+        logger.error(f"시트 확인/생성 실패: {e}")
+
+@st.cache_data(ttl=CACHE_TTL)
+def get_deathmatch_schedules() -> List[Dict[str, Any]]:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        return sh.get_all_records()
+    except Exception as e:
+        logger.error(f"멸망전 일정 로드 실패: {e}")
+        return []
+
+def add_deathmatch_schedule(match_date: str, time_slot: str, team_a: str, team_b: str) -> bool:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        next_id = _get_next_id(sh)
+        sh.append_row([
+            next_id, match_date, time_slot, team_a, team_b, "SCHEDULED", "", "", "", "FALSE"
+        ])
+        clear_cache()
+        return True
+    except Exception as e:
+        logger.error(f"멸망전 일정 추가 실패: {e}")
+        return False
+
+def update_deathmatch_result(match_id: int, team_a_kills: int, team_b_kills: int, winner: str, is_forfeit: bool) -> bool:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        cell = sh.find(str(match_id), in_column=1)
+        if cell:
+            forfeit_str = "TRUE" if is_forfeit else "FALSE"
+            status = "COMPLETED"
+            # Update F:J (status, winner, team_a_kills, team_b_kills, is_forfeit)
+            sh.update(f"F{cell.row}:J{cell.row}", [[status, winner, team_a_kills, team_b_kills, forfeit_str]])
+            clear_cache()
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"멸망전 결과 업데이트 실패: {e}")
+        return False
+
+def delete_deathmatch_schedule(match_id: int) -> bool:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        cell = sh.find(str(match_id), in_column=1)
+        if cell:
+            sh.delete_rows(cell.row)
+            clear_cache()
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"멸망전 매치 삭제 실패: {e}")
+        return False
+
