@@ -868,8 +868,8 @@ def ensure_deathmatch_sheet():
         sh = get_sheet()
         worksheets = [ws.title for ws in sh.worksheets()]
         if "deathmatch_schedules" not in worksheets:
-            ws = sh.add_worksheet("deathmatch_schedules", rows=1000, cols=10)
-            ws.append_row(["id", "match_date", "time_slot", "team_a", "team_b", "status", "winner", "team_a_kills", "team_b_kills", "is_forfeit"])
+            ws = sh.add_worksheet("deathmatch_schedules", rows=1000, cols=13)
+            ws.append_row(["id", "match_date", "time_slot", "team_a", "team_b", "status", "winner1", "team_a_kills1", "team_b_kills1", "winner2", "team_a_kills2", "team_b_kills2", "is_forfeit"])
             logger.info("deathmatch_schedules 시트가 생성되었습니다.")
     except Exception as e:
         logger.error(f"시트 확인/생성 실패: {e}")
@@ -888,7 +888,7 @@ def add_deathmatch_schedule(match_date: str, time_slot: str, team_a: str, team_b
         sh = get_worksheet("deathmatch_schedules")
         next_id = _get_next_id(sh)
         sh.append_row([
-            next_id, match_date, time_slot, team_a, team_b, "SCHEDULED", "", "", "", "FALSE"
+            next_id, match_date, time_slot, team_a, team_b, "SCHEDULED", "", "", "", "", "", "", "FALSE"
         ])
         clear_cache()
         return True
@@ -896,17 +896,20 @@ def add_deathmatch_schedule(match_date: str, time_slot: str, team_a: str, team_b
         logger.error(f"멸망전 일정 추가 실패: {e}")
         return False
 
-def update_deathmatch_result(match_id: int, team_a_kills: int, team_b_kills: int, winner: str, is_forfeit: bool) -> bool:
+def update_deathmatch_result(match_id: int, w1: str, ka1: int, kb1: int, w2: str, ka2: int, kb2: int, is_forfeit: bool) -> bool:
     try:
         sh = get_worksheet("deathmatch_schedules")
         cell = sh.find(str(match_id), in_column=1)
         if cell:
             forfeit_str = "TRUE" if is_forfeit else "FALSE"
             status = "COMPLETED"
-            # Update F:J (status, winner, team_a_kills, team_b_kills, is_forfeit)
-            sh.update(f"F{cell.row}:J{cell.row}", [[status, winner, team_a_kills, team_b_kills, forfeit_str]])
+            # Update F:M (status, winner1, ka1, kb1, winner2, ka2, kb2, is_forfeit)
+            sh.update(f"F{cell.row}:M{cell.row}", [[status, w1, ka1, kb1, w2, ka2, kb2, forfeit_str]])
             clear_cache()
             return True
+        return False
+    except Exception as e:
+        logger.error(f"멸망전 결과 업데이트 실패: {e}")
         return False
     except Exception as e:
         logger.error(f"멸망전 결과 업데이트 실패: {e}")
@@ -948,9 +951,12 @@ def reset_deathmatch_result(match_id: int) -> bool:
         sh = get_worksheet("deathmatch_schedules")
         cell = sh.find(str(match_id), in_column=1)
         if cell:
-            sh.update(f"F{cell.row}:J{cell.row}", [["SCHEDULED", "", "", "", "FALSE"]])
+            sh.update(f"F{cell.row}:M{cell.row}", [["SCHEDULED", "", "", "", "", "", "", "FALSE"]])
             clear_cache()
             return True
+        return False
+    except Exception as e:
+        logger.error(f"멸망전 결과 리셋 실패: {e}")
         return False
     except Exception as e:
         logger.error(f"멸망전 결과 리셋 실패: {e}")
