@@ -940,3 +940,16 @@ def join_deathmatch_schedule(match_id: int, team_b: str) -> bool:
     except Exception as e:
         logger.error(f"멸망전 매치 참가 실패: {e}")
         return False
+
+def reset_deathmatch_result(match_id: int) -> bool:
+    try:
+        sh = get_worksheet("deathmatch_schedules")
+        cell = sh.find(str(match_id), in_column=1)
+        if cell:
+            sh.update(f"F{cell.row}:J{cell.row}", [["SCHEDULED", "", "", "", "FALSE"]])
+            clear_cache()
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"멸망??결과 리셋 ?�패: {e}")
+        return False

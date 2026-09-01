@@ -243,6 +243,13 @@ with tab2:
                                         st.markdown("<div style='text-align:center; font-size:0.8em; color:red;'>기권패 발생</div>", unsafe_allow_html=True)
                                     else:
                                         st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#666;'>KDA: {match.get('team_a_kills','?')} - {match.get('team_b_kills','?')}</div>", unsafe_allow_html=True)
+                                    
+                                    with st.expander("🔄 결과 수정"):
+                                        st.markdown("<div style='font-size:0.85em; color:#666; margin-bottom:10px;'>결과를 수정하려면 먼저 저장된 결과를 리셋해야 합니다.</div>", unsafe_allow_html=True)
+                                        if st.button("결과 초기화 (저장 해제)", key=f"reset_{match['id']}", use_container_width=True):
+                                            if database.reset_deathmatch_result(match['id']):
+                                                st.success("결과가 초기화되었습니다. 다시 입력해주세요.")
+                                                st.rerun()
                                         
                             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
                                         
