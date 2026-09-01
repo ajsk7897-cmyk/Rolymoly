@@ -117,8 +117,8 @@ with tab1:
     for idx, t in enumerate(sorted_teams):
         df_data.append({
             "순위": idx + 1,
-            "승점": stats[t]["Points"],
             "팀명": t,
+            "승점": stats[t]["Points"],
             "세트 진행": stats[t]["Played"],
             "승": stats[t]["Win"],
             "패": stats[t]["Loss"],
