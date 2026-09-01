@@ -158,19 +158,51 @@ with tab1:
     
     # ------------------- 파워스코어 매핑 생성 -------------------
     from utils.helpers import unpack_user_data, calculate_user_scores
+    import difflib
     approved_users = database.get_all_approved_users()
     
+    # 원본 riot_id를 키로 가지는 딕셔너리와, 정규화된 키를 가지는 딕셔너리 준비
     name_to_score = {}
+    normalized_name_to_score = {}
+    valid_names = []
+    
+    def normalize_name(name):
+        return str(name).lower().replace(" ", "")
+        
     for u in approved_users:
         u_dict = unpack_user_data(u)
         _, final_score, _ = calculate_user_scores(u_dict)
-        name_to_score[u_dict['riot_id']] = final_score
-        name_to_score[f"{u_dict['riot_id']}#{u_dict['tag_line']}"] = final_score
+        
+        riot_id = u_dict['riot_id']
+        norm_id = normalize_name(riot_id)
+        
+        name_to_score[riot_id] = final_score
+        name_to_score[f"{riot_id}#{u_dict['tag_line']}"] = final_score
+        normalized_name_to_score[norm_id] = final_score
+        valid_names.append(norm_id)
         
     def score_tag(name):
-        score = name_to_score.get(name)
-        if score is not None:
+        if not name:
+            return ''
+            
+        # 1. 원본 완전 일치
+        if name in name_to_score:
+            score = name_to_score[name]
             return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
+            
+        # 2. 정규화(공백, 대소문자 제거) 일치
+        norm_name = normalize_name(name)
+        if norm_name in normalized_name_to_score:
+            score = normalized_name_to_score[norm_name]
+            return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
+            
+        # 3. 유사도 매칭 (가장 비슷한 이름 찾기)
+        matches = difflib.get_close_matches(norm_name, valid_names, n=1, cutoff=0.4)
+        if matches:
+            best_match = matches[0]
+            score = normalized_name_to_score[best_match]
+            return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
+            
         return ''
     # --------------------------------------------------------
     
