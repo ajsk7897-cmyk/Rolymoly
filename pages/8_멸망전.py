@@ -175,97 +175,113 @@ with tab2:
         times.append(f"{h:02d}:00")
         times.append(f"{h:02d}:30")
         
-    # 해당 날짜의 스케줄 필터링
     day_schedules = [m for m in schedules if str(m.get("match_date", "")) == selected_date]
-    time_map = {m["time_slot"]: m for m in day_schedules}
     
-    # 레이아웃 구성 (3열로 배치)
     cols_per_row = 3
-    
     for row_idx in range(0, len(times), cols_per_row):
         cols = st.columns(cols_per_row)
         for col_idx in range(cols_per_row):
             if row_idx + col_idx < len(times):
                 time_slot = times[row_idx + col_idx]
-                match = time_map.get(time_slot)
+                matches_in_slot = [m for m in day_schedules if m["time_slot"] == time_slot]
                 
                 with cols[col_idx]:
                     with st.container(border=True):
                         st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1em; color:#333; margin-bottom:5px;'>⏰ {time_slot}</div>", unsafe_allow_html=True)
                         
-                        if match:
-                            status_color = "#2e7d32" if match["status"] == "COMPLETED" else "#f57c00"
-                            st.markdown(f"<div style='text-align:center; font-size:0.9em; font-weight:bold; color:{status_color};'>{match['status']}</div>", unsafe_allow_html=True)
-                            st.markdown(f"<div style='text-align:center; font-size:0.95em;'>{match['team_a']} <br>🆚<br> {match['team_b']}</div>", unsafe_allow_html=True)
+                        for idx, match in enumerate(matches_in_slot):
+                            is_waiting = (match['team_b'] == "선택" or not match['team_b'])
+                            status_color = "#f57c00" if is_waiting else ("#2e7d32" if match["status"] == "COMPLETED" else "#1f77b4")
+                            status_text = "상대 대기중" if is_waiting else match["status"]
                             
-                            if match["status"] == "SCHEDULED":
-                                with st.expander("📝 결과 입력"):
-                                    with st.form(key=f"form_result_{match['id']}"):
-                                        win_team = st.selectbox("승리 팀", [match['team_a'], match['team_b']])
-                                        col_k1, col_k2 = st.columns(2)
-                                        with col_k1:
-                                            ka = st.number_input(f"{match['team_a']} 킬", min_value=0, max_value=200, step=1)
-                                        with col_k2:
-                                            kb = st.number_input(f"{match['team_b']} 킬", min_value=0, max_value=200, step=1)
-                                        
-                                        is_forfeit = st.checkbox("🚩 기권 발생 (체크 시 양팀 모두 패배 및 -10점 적용)")
-                                        
-                                        if st.form_submit_button("결과 저장", type="primary", use_container_width=True):
-                                            if database.update_deathmatch_result(match['id'], ka, kb, win_team, is_forfeit):
-                                                st.success("결과가 저장되었습니다.")
-                                                st.rerun()
-                                        
-                                        st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-                                        if st.form_submit_button("❌ 매치 취소 (삭제)", use_container_width=True):
-                                            if database.delete_deathmatch_schedule(match['id']):
-                                                st.success("매치가 취소되었습니다.")
-                                                st.rerun()
-                                                
-                            elif match["status"] == "COMPLETED":
-                                st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#666;'>승리: {match['winner']}</div>", unsafe_allow_html=True)
-                                if str(match.get("is_forfeit", "FALSE")).upper() == "TRUE":
-                                    st.markdown("<div style='text-align:center; font-size:0.8em; color:red;'>기권패 발생</div>", unsafe_allow_html=True)
-                                else:
-                                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#666;'>KDA: {match.get('team_a_kills','?')} - {match.get('team_b_kills','?')}</div>", unsafe_allow_html=True)
-                        else:
-                            st.markdown("<div style='text-align:center; font-size:0.9em; color:#999; margin-bottom:23px;'>빈 시간대</div>", unsafe_allow_html=True)
-                            with st.expander("➕ 매치 등록"):
-                                with st.form(key=f"form_reg_{time_slot}"):
-                                    t_a = st.selectbox("팀 A", team_names, key=f"ta_{time_slot}")
-                                    t_b = st.selectbox("팀 B", team_names, key=f"tb_{time_slot}", index=1)
-                                    
-                                    if st.form_submit_button("등록", type="primary", use_container_width=True):
-                                        if t_a == t_b:
-                                            st.error("서로 다른 팀을 선택해주세요.")
-                                        else:
-                                            # Validation
-                                            # 1. Total games check (< 16)
-                                            # 2. H2H check (< 2)
-                                            # 3. Same time check
-                                            
-                                            # 전체 스케줄 다시 조회 (최신)
-                                            all_schedules = database.get_deathmatch_schedules()
-                                            
-                                            a_total = sum(1 for s in all_schedules if s['team_a']==t_a or s['team_b']==t_a)
-                                            b_total = sum(1 for s in all_schedules if s['team_a']==t_b or s['team_b']==t_b)
-                                            
-                                            h2h_count = sum(1 for s in all_schedules if (s['team_a']==t_a and s['team_b']==t_b) or (s['team_a']==t_b and s['team_b']==t_a))
-                                            
-                                            time_conflict_a = any(s['match_date']==selected_date and s['time_slot']==time_slot and (s['team_a']==t_a or s['team_b']==t_a) for s in all_schedules)
-                                            time_conflict_b = any(s['match_date']==selected_date and s['time_slot']==time_slot and (s['team_a']==t_b or s['team_b']==t_b) for s in all_schedules)
-                                            
-                                            if a_total >= 16:
-                                                st.error(f"{t_a}은(는) 이미 최대 경기수(16)를 채웠습니다.")
-                                            elif b_total >= 16:
-                                                st.error(f"{t_b}은(는) 이미 최대 경기수(16)를 채웠습니다.")
-                                            elif h2h_count >= 2:
-                                                st.error("두 팀은 이미 2번의 매치가 등록되어 있습니다.")
-                                            elif time_conflict_a:
-                                                st.error(f"{t_a}은(는) 이 시간에 이미 다른 매치가 있습니다.")
-                                            elif time_conflict_b:
-                                                st.error(f"{t_b}은(는) 이 시간에 이미 다른 매치가 있습니다.")
+                            st.markdown(f"<div style='text-align:center; font-size:0.9em; font-weight:bold; color:{status_color}; margin-top:10px;'>{status_text}</div>", unsafe_allow_html=True)
+                            
+                            if is_waiting:
+                                st.markdown(f"<div style='text-align:center; font-size:0.95em;'>{match['team_a']} <br>🆚<br> [?]</div>", unsafe_allow_html=True)
+                                with st.expander("🤝 매치 참가"):
+                                    with st.form(key=f"join_{match['id']}"):
+                                        join_t = st.selectbox("참가 팀 선택", team_names)
+                                        if st.form_submit_button("참가하기", type="primary", use_container_width=True):
+                                            if join_t == match['team_a']:
+                                                st.error("같은 팀은 참가할 수 없습니다.")
                                             else:
-                                                if database.add_deathmatch_schedule(selected_date, time_slot, t_a, t_b):
-                                                    st.toast("✅ 매치가 성공적으로 등록되었습니다!")
+                                                if database.join_deathmatch_schedule(match['id'], join_t):
+                                                    st.success("매치에 참가했습니다!")
                                                     st.rerun()
+                                        if st.form_submit_button("❌ 방 삭제", use_container_width=True):
+                                            if database.delete_deathmatch_schedule(match['id']):
+                                                st.success("매치가 삭제되었습니다.")
+                                                st.rerun()
+                            else:
+                                st.markdown(f"<div style='text-align:center; font-size:0.95em;'>{match['team_a']} <br>🆚<br> {match['team_b']}</div>", unsafe_allow_html=True)
+                                
+                                if match["status"] == "SCHEDULED":
+                                    with st.expander("📝 결과 입력"):
+                                        with st.form(key=f"form_result_{match['id']}"):
+                                            win_team = st.selectbox("승리 팀", [match['team_a'], match['team_b']])
+                                            col_k1, col_k2 = st.columns(2)
+                                            with col_k1:
+                                                ka = st.number_input(f"{match['team_a']} 킬", min_value=0, max_value=200, step=1)
+                                            with col_k2:
+                                                kb = st.number_input(f"{match['team_b']} 킬", min_value=0, max_value=200, step=1)
+                                            
+                                            is_forfeit = st.checkbox("🚩 기권 발생 (체크 시 양팀 모두 패배 및 -10점 적용)")
+                                            
+                                            if st.form_submit_button("결과 저장", type="primary", use_container_width=True):
+                                                if database.update_deathmatch_result(match['id'], ka, kb, win_team, is_forfeit):
+                                                    st.success("결과가 저장되었습니다.")
+                                                    st.rerun()
+                                            
+                                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+                                            if st.form_submit_button("❌ 매치 취소 (삭제)", use_container_width=True):
+                                                if database.delete_deathmatch_schedule(match['id']):
+                                                    st.success("매치가 취소되었습니다.")
+                                                    st.rerun()
+                                elif match["status"] == "COMPLETED":
+                                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#666;'>승리: {match['winner']}</div>", unsafe_allow_html=True)
+                                    if str(match.get("is_forfeit", "FALSE")).upper() == "TRUE":
+                                        st.markdown("<div style='text-align:center; font-size:0.8em; color:red;'>기권패 발생</div>", unsafe_allow_html=True)
+                                    else:
+                                        st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#666;'>KDA: {match.get('team_a_kills','?')} - {match.get('team_b_kills','?')}</div>", unsafe_allow_html=True)
+                                        
+                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+                                        
+                        # Add new match button for this slot
+                        with st.expander("➕ 새 방 파기"):
+                            with st.form(key=f"form_reg_{time_slot}"):
+                                t_a = st.selectbox("방장 팀", team_names, key=f"ta_{time_slot}")
+                                t_b_options = ["선택"] + team_names
+                                t_b = st.selectbox("상대 팀 (비워두면 대기)", t_b_options, key=f"tb_{time_slot}")
+                                
+                                if st.form_submit_button("방 만들기", type="primary", use_container_width=True):
+                                    if t_b != "선택" and t_a == t_b:
+                                        st.error("서로 다른 팀을 선택해주세요.")
+                                    else:
+                                        # 검증 생략 혹은 필요 시 재적용 가능 (동시간대 검증 등은 유연하게 허용하되, 총 경기 수만 체크)
+                                        all_schedules = database.get_deathmatch_schedules()
+                                        
+                                        # 최대 경기수 16 검증
+                                        a_total = sum(1 for s in all_schedules if s['team_a']==t_a or s['team_b']==t_a)
+                                        b_total = sum(1 for s in all_schedules if s['team_a']==t_b or s['team_b']==t_b)
+                                        
+                                        # 같은 팀 매치 최대 2경기 검증
+                                        h2h_count = sum(1 for s in all_schedules if (s['team_a']==t_a and s['team_b']==t_b) or (s['team_a']==t_b and s['team_b']==t_a)) if t_b != "선택" else 0
+                                        
+                                        # 동시간대 같은 팀 참가 방지 (선택 옵션)
+                                        time_conflict_a = any(s['match_date']==selected_date and s['time_slot']==time_slot and (s['team_a']==t_a or s['team_b']==t_a) for s in all_schedules)
+                                        time_conflict_b = any(s['match_date']==selected_date and s['time_slot']==time_slot and (s['team_a']==t_b or s['team_b']==t_b) for s in all_schedules) if t_b != "선택" else False
 
+                                        if a_total >= 16:
+                                            st.error(f"{t_a}은(는) 이미 최대 경기수(16)를 채웠습니다.")
+                                        elif t_b != "선택" and b_total >= 16:
+                                            st.error(f"{t_b}은(는) 이미 최대 경기수(16)를 채웠습니다.")
+                                        elif h2h_count >= 2:
+                                            st.error("두 팀은 이미 2번의 매치가 등록되어 있습니다.")
+                                        elif time_conflict_a:
+                                            st.error(f"{t_a}은(는) 이 시간에 이미 다른 매치에 참가 중입니다.")
+                                        elif time_conflict_b:
+                                            st.error(f"{t_b}은(는) 이 시간에 이미 다른 매치에 참가 중입니다.")
+                                        else:
+                                            if database.add_deathmatch_schedule(selected_date, time_slot, t_a, t_b):
+                                                st.toast("✅ 방이 성공적으로 생성되었습니다!")
+                                                st.rerun()
