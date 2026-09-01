@@ -117,16 +117,21 @@ with tab1:
     for idx, t in enumerate(sorted_teams):
         df_data.append({
             "순위": idx + 1,
+            "승점": stats[t]["Points"],
             "팀명": t,
             "세트 진행": stats[t]["Played"],
             "승": stats[t]["Win"],
             "패": stats[t]["Loss"],
-            "승점": stats[t]["Points"],
             "KDA득실차": stats[t]["KDADiff"]
         })
         
     df_leaderboard = pd.DataFrame(df_data)
-    st.dataframe(df_leaderboard, use_container_width=True, hide_index=True)
+    
+    def highlight_points(s):
+        return ['background-color: #e6ffe6' if s.name == '승점' else '' for _ in s]
+        
+    styled_df = df_leaderboard.style.apply(highlight_points)
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
     
     st.markdown("---")
     st.subheader("⚔️ 승패 매트릭스 (Head-to-head 세트 승패)")
