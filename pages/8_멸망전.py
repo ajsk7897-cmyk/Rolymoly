@@ -176,14 +176,13 @@ with tab2:
     st.info("💡 팀 간의 2세트 경기 결과를 한 번에 등록합니다. 한 팀당 전체 대회 기간 중 최대 8번의 매치(16세트)만 가능하며, 동일한 두 팀 간의 매치는 단 1회만 등록 가능합니다.")
     
     with st.expander("➕ 새 매치 결과 등록", expanded=True):
-        with st.form(key="form_register_match"):
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                t_a = st.selectbox("Team A", team_names, key="reg_ta")
-            with col_t2:
-                t_b = st.selectbox("Team B", team_names, key="reg_tb")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            t_a = st.selectbox("Team A", team_names, key="reg_ta")
+        with col_t2:
+            t_b = st.selectbox("Team B", team_names, key="reg_tb")
             
-            st.markdown("---")
+        with st.form(key="form_register_match"):
             st.markdown("##### 1세트 결과")
             w1 = st.selectbox("1세트 승리팀", [t_a, t_b], key="reg_w1")
             col_k1a, col_k1b = st.columns(2)
