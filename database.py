@@ -849,14 +849,14 @@ def get_auction_points_by_user() -> Tuple[Dict[int, int], Dict[int, int]]:
 
 DEATHMATCH_TEAMS = {
     "벌꿀쩡명 팀": {"TOP": "벌꿀쩡명#0221", "JG": "강한남자손뚜깡#kr1", "MID": "수 빈#KR111", "AD": "總身彫り#九紋龍", "SUP": "괴물조련사김딸기#정복자", "Leader": "TOP"},
-    "마묵 팀": {"TOP": "Siat#kr1", "JG": "무력#8481", "MID": "팬더가서자", "AD": "마스터까지", "SUP": "사 연#KR1", "Leader": "AD"},
-    "지배좌 팀": {"TOP": "홍시먹다체", "JG": "콩이바람이", "MID": "지배좌#ea", "AD": "부리부리ㄷ", "SUP": "라라루루#", "Leader": "MID"},
-    "치원 팀": {"TOP": "암베사#00", "JG": "오도봉구#", "MID": "원웅언니#", "AD": "치 원#KR1", "SUP": "혜오니야#", "Leader": "AD"},
-    "치코 팀": {"TOP": "들기름무빙", "JG": "평화파밍사", "MID": "메이쥐#KF", "AD": "치 코#리", "SUP": "슬모띵#kr", "Leader": "AD"},
-    "건동김 팀": {"TOP": "건동김#KR", "JG": "용트름장인", "MID": "nodiemeb", "AD": "범상#1214", "SUP": "세또버#kr", "Leader": "TOP"},
-    "달고나 팀": {"TOP": "박두리안#", "JG": "flash#hoya", "MID": "호텔달고나", "AD": "대 답#좀", "SUP": "너너무무뚝뚝", "Leader": "MID"},
-    "개화 팀": {"TOP": "승연뽕따이", "JG": "경먀#KR1", "MID": "곰 조련사", "AD": "여름싫다너무", "SUP": "개화#9812", "Leader": "SUP"},
-    "겨울 팀": {"TOP": "잘가자요#", "JG": "연 차 쓸 래 요", "MID": "한 방#KR3", "AD": "겨울#kr99", "SUP": "정 현#kr2", "Leader": "AD"},
+    "마묵 팀": {"TOP": "Siat#kr1", "JG": "무력#8481", "MID": "팬더가서자#kr1", "AD": "마스터까지묵언함#kr1", "SUP": "사 연#KR11", "Leader": "AD"},
+    "지배좌 팀": {"TOP": "홍시먹다체함#kr0", "JG": "콩이바람이아빠#KR1", "MID": "지배좌#easy", "AD": "부리부리대마왕#KR2", "SUP": "라라루루#kr0", "Leader": "MID"},
+    "치원 팀": {"TOP": "암베사#001", "JG": "오도봉구#kr1", "MID": "원웅언니#kr1", "AD": "치 원#KR1", "SUP": "혜오니야#KR1", "Leader": "AD"},
+    "치코 팀": {"TOP": "들기름무빙#kr01", "JG": "평화파밍사랑#KR4", "MID": "메이쥐#KR0", "AD": "치 코#리 타", "SUP": "슬모띵#kr1", "Leader": "AD"},
+    "건동김 팀": {"TOP": "건동김#KR1", "JG": "용트름장인#끄어억", "MID": "nodiemebuss#KR1", "AD": "범상#1214", "SUP": "세또버#kr2", "Leader": "TOP"},
+    "달고나 팀": {"TOP": "박두리안#배꼽냄새", "JG": "flash#hoya", "MID": "호텔달고나#kr1", "AD": "대 답#좀 해라", "SUP": "너너무무뚝뚝#123", "Leader": "MID"},
+    "개화 팀": {"TOP": "승연뽕따이#kr1", "JG": "경먀#KR1", "MID": "곰 조련사 애니#KR1", "AD": "여름싫다너무더워#kr1", "SUP": "개화#9812", "Leader": "SUP"},
+    "겨울 팀": {"TOP": "잘가자요#kr1", "JG": "연 차 쓸 래 요#kr1", "MID": "한 방#KR3", "AD": "겨울#kr99", "SUP": "정 현#kr2", "Leader": "AD"},
 }
 
 def get_deathmatch_teams() -> dict:
