@@ -218,15 +218,28 @@ with tab1:
             return f' <span style="color: #e67e22; font-size: 0.9em; font-weight: bold;">({score})</span>'
             
         return ''
+        
+    def get_raw_score(name):
+        if not name: return 0
+        if name in name_to_score: return name_to_score[name]
+        norm_name = normalize_name(name)
+        custom_aliases = {"노다이": "nodiemebuss", "봄쉘": "bombshell"}
+        if norm_name in custom_aliases: norm_name = custom_aliases[norm_name]
+        elif name in custom_aliases: norm_name = custom_aliases[name]
+        if norm_name in normalized_name_to_score: return normalized_name_to_score[norm_name]
+        matches = difflib.get_close_matches(norm_name, valid_names, n=1, cutoff=0.4)
+        if matches: return normalized_name_to_score[matches[0]]
+        return 0
     # --------------------------------------------------------
     
     cols = st.columns(3)
     for idx, t_name in enumerate(team_names):
         roster = teams_data[t_name]
+        team_total_score = sum(get_raw_score(roster[role]) for role in ['TOP', 'JG', 'MID', 'AD', 'SUP'])
         with cols[idx % 3]:
             st.markdown(f"""
             <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                <h4 style="margin-top: 0; color: #1f77b4; text-align: center;">{t_name}</h4>
+                <h4 style="margin-top: 0; color: #1f77b4; text-align: center;">{t_name} <span style="font-size: 0.8em; color: #e67e22;">(합산: {team_total_score})</span></h4>
                 <hr style="margin: 10px 0;">
                 <div style="display: grid; grid-template-columns: 40px 1fr; gap: 5px; font-size: 0.95em;">
                     <div style="font-weight: bold; color: #555;">TOP</div><div>{roster['TOP']}{score_tag(roster['TOP'])} {'👑' if roster['Leader']=='TOP' else ''}</div>
