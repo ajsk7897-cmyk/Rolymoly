@@ -179,7 +179,9 @@ with tab1:
         name_to_score[riot_id] = final_score
         name_to_score[f"{riot_id}#{u_dict['tag_line']}"] = final_score
         normalized_name_to_score[norm_id] = final_score
+        normalized_name_to_score[normalize_name(f"{riot_id}#{u_dict['tag_line']}")] = final_score
         valid_names.append(norm_id)
+        valid_names.append(normalize_name(f"{riot_id}#{u_dict['tag_line']}"))
         
     def score_tag(name):
         if not name:
